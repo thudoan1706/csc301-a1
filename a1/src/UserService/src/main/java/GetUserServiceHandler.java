@@ -30,13 +30,11 @@ public class GetUserServiceHandler implements HttpHandler {
             String id = parts[parts.length - 1];
             Map<String, String> responseBodyMap = db.getUser(Integer.parseInt(id));
             String jsonResponse = new ObjectMapper().writeValueAsString(responseBodyMap);
-            System.out.println(jsonResponse);
-            sendResponse(exchange);
+            sendResponse(exchange, jsonResponse);
         }
     }
 
-    private static void sendResponse(HttpExchange exchange) throws IOException {
-        String response = "Lecture foobar foobar Received POST request for /test";
+    private static void sendResponse(HttpExchange exchange, String response) throws IOException {
         exchange.sendResponseHeaders(200, response.length());
         OutputStream os = exchange.getResponseBody();
         os.write(response.getBytes(StandardCharsets.UTF_8));

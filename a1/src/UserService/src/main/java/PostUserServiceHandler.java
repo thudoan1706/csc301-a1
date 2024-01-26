@@ -23,17 +23,36 @@ public class PostUserServiceHandler implements HttpHandler {
         String userURI = "/user/" + id;
         // Handle POST request for /test
         if ("POST".equals(exchange.getRequestMethod())) {
+            String response = "";
             if ("update".equals(requestBodyMap.get("command"))) {
-                db.updateExistingUser(id, requestBodyMap);
+                Boolean isUpdated = db.updateExistingUser(id, requestBodyMap);
+                if (isUpdated) {
+                    response = "The user is successfully updated";
+                } else {
+                    response = "The user is unsuccessfully updated";
+                }
             } else if ("delete".equals(requestBodyMap.get("command"))) {
-                db.deleteExistingUser(id, requestBodyMap);
+                Boolean isDeleted = db.deleteExistingUser(id, requestBodyMap);
                 server.removeContext(userURI);
+                if (isDeleted) {
+                    response = "The user is successfully deleted";
+                } else {
+                    response = "The user is unsuccessfully updated";
+                }
             } else if ("create".equals(requestBodyMap.get("command"))) {
-                db.createNewUser(id, requestBodyMap);
+                Boolean isCreated = db.createNewUser(id, requestBodyMap);
                 server.createContext(userURI, new GetUserServiceHandler());
+                if (isCreated) {
+                    response = "The user is successfully created";
+                } else {
+                    response = "The user is unsuccessfully created";
+                }
             }
-            sendResponse(exchange);
-        } 
+            sendResponse(exchange, response);
+        } else {
+            exchange.sendResponseHeaders(405,0);
+            exchange.close();
+        }
     }
 
 
@@ -63,8 +82,7 @@ public class PostUserServiceHandler implements HttpHandler {
         }
     }
 
-    private static void sendResponse(HttpExchange exchange) throws IOException {
-        String response = "Lecture foobar foobar Received POST request for /test";
+    private static void sendResponse(HttpExchange exchange, String response) throws IOException {
         exchange.sendResponseHeaders(200, response.length());
         OutputStream os = exchange.getResponseBody();
         os.write(response.getBytes(StandardCharsets.UTF_8));

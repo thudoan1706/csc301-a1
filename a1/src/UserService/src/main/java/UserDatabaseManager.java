@@ -1,6 +1,7 @@
 import java.util.*;
 import com.fasterxml.jackson.databind.*;
 import java.util.stream.Collectors;
+import java.io.IOException;
 import java.io.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,7 +11,7 @@ import java.nio.file.StandardOpenOption;
 
 public class UserDatabaseManager {
 
-    private static final String JSON_FILE_PATH = "./user.json";
+    private static final String JSON_FILE_PATH = "./data/user.json";
     private static List<User> existingUsers;
 
     public UserDatabaseManager() {
@@ -34,54 +35,75 @@ public class UserDatabaseManager {
     }
 
 
-    public void updateExistingUser(Integer id, Map<String, String> requestBodyMap) {
+    public boolean updateExistingUser(Integer id, Map<String, String> requestBodyMap) {
         boolean isPresent = isUserPresent(id);
-    
-        if (isPresent) {
-            String username = requestBodyMap.getOrDefault("username", null);
-            String email = requestBodyMap.getOrDefault("email", null);
-            String password = requestBodyMap.getOrDefault("password", null);
-    
-            existingUsers = existingUsers.stream()
-                    .filter(eu -> eu.getId() == id)
-                    .map(eu -> {
-                        eu.setEmail(Objects.requireNonNullElse(email, eu.getEmail()));
-                        eu.setUsername(Objects.requireNonNullElse(username, eu.getUsername()));
-                        eu.setPassword(Objects.requireNonNullElse(password, eu.getPassword()));
-                        return eu;
-                    }).collect(Collectors.toList());
-            storeUsersToJson();
+        try {
+            if (isPresent) {
+                String username = requestBodyMap.getOrDefault("username", null);
+                String email = requestBodyMap.getOrDefault("email", null);
+                String password = requestBodyMap.getOrDefault("password", null);
+        
+                existingUsers = existingUsers.stream()
+                        .filter(eu -> eu.getId() == id)
+                        .map(eu -> {
+                            eu.setEmail(Objects.requireNonNullElse(email, eu.getEmail()));
+                            eu.setUsername(Objects.requireNonNullElse(username, eu.getUsername()));
+                            eu.setPassword(Objects.requireNonNullElse(password, eu.getPassword()));
+                            return eu;
+                        }).collect(Collectors.toList());
+                storeUsersToJson();
+                return true;
+            }
+            return false;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
         }
     }
     
-    public void deleteExistingUser(Integer id, Map<String, String> requestBodyMap) {
-        String username = requestBodyMap.getOrDefault("username", null);
-        String email = requestBodyMap.getOrDefault("email", null);
-        String password = requestBodyMap.getOrDefault("password", null);
-    
-        existingUsers.removeIf(existingUser ->
-                existingUser.getId() == id &&
-                existingUser.getEmail().equals(email) &&
-                existingUser.getUsername().equals(username) &&
-                existingUser.getPassword().equals(password));
-        storeUsersToJson();
+    public boolean deleteExistingUser(Integer id, Map<String, String> requestBodyMap) throws IOException {
+        try {
+            String username = requestBodyMap.getOrDefault("username", null);
+            String email = requestBodyMap.getOrDefault("email", null);
+            String password = requestBodyMap.getOrDefault("password", null);
+        
+            existingUsers.removeIf(existingUser ->
+                    existingUser.getId() == id &&
+                    existingUser.getEmail().equals(email) &&
+                    existingUser.getUsername().equals(username) &&
+                    existingUser.getPassword().equals(password));
+            storeUsersToJson();
+            return true;
+        } catch (IOException e) {
+            // handle IO exception, such as file not found or permission issues
+            e.printStackTrace();
+            return false;
+        }
     }
     
-    public void createNewUser(Integer id, Map<String, String> requestBodyMap) {
-        if (!isUserPresent(id)) {
-            User newUser = new User(
-                    id,
-                    requestBodyMap.get("username"),
-                    requestBodyMap.get("email"),
-                    requestBodyMap.get("password")
-            );
-            existingUsers.add(newUser);
-            storeUsersToJson();
+    public boolean createNewUser(Integer id, Map<String, String> requestBodyMap) throws IOException {
+        try {
+            if (!isUserPresent(id)) {
+                User newUser = new User(
+                        id,
+                        requestBodyMap.get("username"),
+                        requestBodyMap.get("email"),
+                        requestBodyMap.get("password")
+                );
+                existingUsers.add(newUser);
+                storeUsersToJson();
+                return true;
+            } else {
+                return false;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
         }
     }
     
 
-    private static boolean storeUsersToJson() {
+    private static boolean storeUsersToJson() throws IOException {
         try {
             // Write the updated list to the JSON file
             ObjectMapper objectMapper = new ObjectMapper();
