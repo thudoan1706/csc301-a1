@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import exceptions.ProductNotFoundException;
+import exceptions.ProductSerializationException;
 
 public class ProductDatabase {
 
@@ -18,45 +20,36 @@ public class ProductDatabase {
         products = retrieveDatabase();
     }
 
-    private List<Product> retrieveDatabase() {
-        File file = new File(pathname);
+    public String getProduct(String requestURI) {
+        int lastIndex = requestURI.lastIndexOf("/");
+        String idString = requestURI.substring(lastIndex + 1);
+        int id = Integer.parseInt(idString);
 
-        if (!file.exists()) {
-            return new ArrayList<>();
+        for (Product product: products) {
+            if (product.getId() == id) {
+                try {
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    return objectMapper.writeValueAsString(product);
+                } catch (JsonProcessingException e) {
+                    throw new ProductSerializationException("An error occurred while serializing product to JSON", e);
+                }
+            }
         }
-
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            List<Product> productList = objectMapper.readValue(file, new TypeReference<List<Product>>() {});
-            System.out.println("Product Database successfully retrieved data");
-            return productList;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
+        throw new ProductNotFoundException("Cannot find product with id: " + id);
     }
 
-    private void updateDatabase() {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new File(pathname), products);
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Error updating productDB.json file");
-        }
-    }
-
-    public void saveProduct(Map<String, String> requestBodyMap) {
+    public void createProduct(Map<String, String> requestBodyMap) {
         int id = Integer.parseInt(requestBodyMap.get("id"));
-        String productname = requestBodyMap.get("productname");
-        float price = Float.parseFloat(requestBodyMap.get("price"));
-        int quantity = Integer.parseInt(requestBodyMap.get("quantity"));
-        Product product = new Product(id, productname, price, quantity);
 
-        products.add(product);
-        updateDatabase();
+        if (!productExists(id)) {
+            String productname = requestBodyMap.get("productname");
+            float price = Float.parseFloat(requestBodyMap.get("price"));
+            int quantity = Integer.parseInt(requestBodyMap.get("quantity"));
+            Product product = new Product(id, productname, price, quantity);
 
-        System.out.println("Product Database added: " + product.getProductname());
+            products.add(product);
+            updateDatabase();
+        }
     }
 
     public void deleteProduct(Map<String, String> requestBodyMap) {
@@ -70,8 +63,6 @@ public class ProductDatabase {
                 currProduct.getPrice() == price &&
                 currProduct.getQuantity() == quantity);
         updateDatabase();
-
-        System.out.println("Product Database deleted: " + productname);
     }
 
     public void updateProduct(Map<String, String> requestBodyMap) {
@@ -94,7 +85,39 @@ public class ProductDatabase {
                 updateDatabase();
             }
         }
+    }
 
-        System.out.println("Product Database updated: " + requestBodyMap.get("productname"));
+    private List<Product> retrieveDatabase() {
+        File file = new File(pathname);
+
+        if (!file.exists()) {
+            return new ArrayList<>();
+        }
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readValue(file, new TypeReference<List<Product>>() {});
+        } catch (IOException e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    private void updateDatabase() {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new File(pathname), products);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean productExists(int id) {
+        for (Product product: products) {
+            if (product.getId() == id) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -6,7 +6,6 @@ import com.sun.net.httpserver.HttpExchange;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
@@ -15,6 +14,8 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import exceptions.InvalidPostCommand;
+import exceptions.ProductNotFoundException;
 
 public class ProductService {
     public static void  main(String[] args) throws IOException {
@@ -43,39 +44,51 @@ public class ProductService {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            if ("POST".equals(exchange.getRequestMethod())) {
-                Map<String, String> requestBodyMap = getRequestBody(exchange);
-                String command = requestBodyMap.get("command");
-                String response = "";
+            try {
+                if ("POST".equals(exchange.getRequestMethod())) {
+                    Map<String, String> requestBodyMap = getRequestBody(exchange);
+                    String command = requestBodyMap.get("command");
+                    String response;
 
-                switch (command) {
-                    case "create":
-                        response = "ProductRequestHandler: received create POST req for /product";
-                        productDatabase.saveProduct(requestBodyMap);
-                        break;
-                    case "update":
-                        response = "ProductRequestHandler: received update POST req for /product";
-                        productDatabase.updateProduct(requestBodyMap);
-                        break;
-                    case "delete":
-                        response = "ProductRequestHandler: received delete POST req for /product";
-                        productDatabase.deleteProduct(requestBodyMap);
-                        break;
-                    default:
-                        response = "ProductRequestHandler: received invalid post command";
-                        System.err.println("Invalid post command: " + command);
+                    switch (command) {
+                        case "create":
+                            response = "ProductRequestHandler: received create POST req for /product";
+                            productDatabase.createProduct(requestBodyMap);
+                            break;
+                        case "update":
+                            response = "ProductRequestHandler: received update POST req for /product";
+                            productDatabase.updateProduct(requestBodyMap);
+                            break;
+                        case "delete":
+                            response = "ProductRequestHandler: received delete POST req for /product";
+                            productDatabase.deleteProduct(requestBodyMap);
+                            break;
+                        default:
+                            throw new InvalidPostCommand("Received invalid POST command: " + command);
+                    }
+
+                    ResponseHandler.sendResponse(exchange, response, 200);
+
+                } else if ("GET".equals(exchange.getRequestMethod())) {
+                    String requestURI = exchange.getRequestURI().toString();
+                    try {
+                        String response = productDatabase.getProduct(requestURI);
+                        ResponseHandler.sendResponse(exchange, response, 200);
+                    } catch (ProductNotFoundException e) {
+                        System.err.println(e.getMessage());
+                        String response = e.getMessage();
+                        ResponseHandler.sendResponse(exchange, response, 400);
+                    }
+
+                } else {
+                    // Send a 405 Method Not Allowed response for non-POST requests
+                    exchange.sendResponseHeaders(405, 0);
+                    exchange.close();
                 }
-
-                sendResponse(exchange, response);
-
-            } else if ("GET".equals(exchange.getRequestMethod())) {
-                String response = "ProductRequestHandler: received GET req for /product";
-                sendResponse(exchange, response);
-
-            } else {
-                // Send a 405 Method Not Allowed response for non-POST requests
-                exchange.sendResponseHeaders(405, 0);
-                exchange.close();
+            } catch (InvalidPostCommand e) {
+                System.err.println(e.getMessage());
+                String response = "ProductRequestHandler: invalid post command received";
+                ResponseHandler.sendResponse(exchange, response, 400);
             }
         }
 
@@ -90,13 +103,6 @@ public class ProductService {
                 ObjectMapper objectMapper = new ObjectMapper();
                 return objectMapper.readValue(requestBody.toString(), new TypeReference<HashMap<String, String>>() {});
             }
-        }
-
-        private static void sendResponse(HttpExchange exchange, String response) throws IOException {
-            exchange.sendResponseHeaders(200, response.length());
-            OutputStream os = exchange.getResponseBody();
-            os.write(response.getBytes(StandardCharsets.UTF_8));
-            os.close();
         }
     }
 }
