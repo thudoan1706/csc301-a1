@@ -33,42 +33,36 @@ public class ProductService {
         System.out.println("Server started on port " + port);
     }
 
-    static class Product {
-        // Class attributes
-        int id;
-        String productname;
-        float price;
-        int quantity;
-
-        // Product constructor
-        public Product(int id, String productname, float price, int quantity) {
-            this.id = id;
-            this.productname = productname;
-            this.price = price;
-            this.quantity = quantity;
-        }
-    }
-
     static class ProductRequestHandler implements HttpHandler {
+        ProductDatabase productDatabase;
+
+        public ProductRequestHandler() {
+            // Create product database instance
+            this.productDatabase = new ProductDatabase();
+        }
+
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             if ("POST".equals(exchange.getRequestMethod())) {
                 Map<String, String> requestBodyMap = getRequestBody(exchange);
                 String command = requestBodyMap.get("command");
-
                 String response = "";
 
                 switch (command) {
                     case "create":
                         response = "ProductRequestHandler: received create POST req for /product";
+                        productDatabase.saveProduct(requestBodyMap);
                         break;
                     case "update":
                         response = "ProductRequestHandler: received update POST req for /product";
+                        productDatabase.updateProduct(requestBodyMap);
                         break;
                     case "delete":
                         response = "ProductRequestHandler: received delete POST req for /product";
+                        productDatabase.deleteProduct(requestBodyMap);
                         break;
                     default:
+                        response = "ProductRequestHandler: received invalid post command";
                         System.err.println("Invalid post command: " + command);
                 }
 
