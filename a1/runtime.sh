@@ -5,4 +5,4 @@
 find . -type f -name "*.sh" -exec chmod +x {} \;
 
 # Run all .sh scripts
-find . -type f -name "*.sh" -exec ./{} \;
+find . -type f -name "*.sh" -execdir sh {} \;

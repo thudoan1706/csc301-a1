@@ -35,9 +35,10 @@ public class UserDatabaseManager {
     }
 
 
-    public boolean updateExistingUser(Integer id, Map<String, String> requestBodyMap) {
-        boolean isPresent = isUserPresent(id);
+    public boolean updateExistingUser(Map<String, String> requestBodyMap) {
         try {
+            int id = Integer.parseInt(requestBodyMap.get("id"));
+            boolean isPresent = isUserPresent(id);
             if (isPresent) {
                 String username = requestBodyMap.getOrDefault("username", null);
                 String email = requestBodyMap.getOrDefault("email", null);
@@ -61,8 +62,9 @@ public class UserDatabaseManager {
         }
     }
     
-    public boolean deleteExistingUser(Integer id, Map<String, String> requestBodyMap) throws IOException {
+    public boolean deleteExistingUser(Map<String, String> requestBodyMap) throws IOException {
         try {
+            int id = Integer.parseInt(requestBodyMap.get("id"));
             String username = requestBodyMap.getOrDefault("username", null);
             String email = requestBodyMap.getOrDefault("email", null);
             String password = requestBodyMap.getOrDefault("password", null);
@@ -81,8 +83,12 @@ public class UserDatabaseManager {
         }
     }
     
-    public boolean createNewUser(Integer id, Map<String, String> requestBodyMap) throws IOException {
+    public boolean createNewUser(Map<String, String> requestBodyMap) throws IOException {
         try {
+            System.out.println("Hello");
+            int id = Integer.parseInt(requestBodyMap.get("id"));
+            System.out.println("Hello");
+
             if (!isUserPresent(id)) {
                 User newUser = new User(
                         id,

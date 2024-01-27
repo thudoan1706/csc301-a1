@@ -6,10 +6,10 @@ find ../../ -name '*.class' -delete
 
 # Set relative paths
 project_root=../../
-us_bin=$project_root/src/UserService/bin/
-us_lib=$project_root/src/UserService/lib/
+us_bin=./bin
+us_lib=../lib
 srcFile=$project_root/src/UserService/src/main/java/
-data=$project_root/src/UserService/src/data/
+data=./data/
 
 # Create the bin directory if it doesn't exist
 mkdir -p "$us_bin"
