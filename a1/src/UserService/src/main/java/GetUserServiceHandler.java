@@ -30,14 +30,17 @@ public class GetUserServiceHandler implements HttpHandler {
             String id = parts[parts.length - 1];
             Map<String, String> responseBodyMap = db.getUser(Integer.parseInt(id));
             String jsonResponse = new ObjectMapper().writeValueAsString(responseBodyMap);
-            sendResponse(exchange, jsonResponse);
+            sendResponse(exchange, 200, jsonResponse);
+        } else {
+            sendResponse(exchange, 405, "Method Not Allowed");
+            exchange.close();
         }
     }
 
-    private static void sendResponse(HttpExchange exchange, String response) throws IOException {
-        exchange.sendResponseHeaders(200, response.length());
-        OutputStream os = exchange.getResponseBody();
-        os.write(response.getBytes(StandardCharsets.UTF_8));
-        os.close();
+    private static void sendResponse(HttpExchange exchange, int statusCode, String response) throws IOException {
+        exchange.sendResponseHeaders(statusCode, response.length());
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(response.getBytes());
+        }
     }
 }

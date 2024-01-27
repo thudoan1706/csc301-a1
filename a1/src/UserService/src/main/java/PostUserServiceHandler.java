@@ -33,13 +33,7 @@ public class PostUserServiceHandler implements HttpHandler {
                     int id;
                     String response;
                     Object objectID = requestBodyMap.get("id");
-                    String command = (String) requestBodyMap.get("command");
-                    System.out.println("Request URI: " + requestURI);
-                    // Assuming exchange is an HttpExchange object
-                    System.out.println("Request Body: " + requestBodyMap);
-                    System.out.println("Object ID: " + objectID);
-                    System.out.println("Object ID Type: " + objectID.getClass().getName());
-
+                    String command = (String) requestBodyMap.get("command");  
                     // Check if 'id' is present and of type Integer
                     if (objectID instanceof Integer) {
                         // Cast 'id' to Integer
@@ -65,6 +59,7 @@ public class PostUserServiceHandler implements HttpHandler {
                             } else {
                                 response = "The user is unsuccessfully created";
                                 sendResponse(exchange, 500, response);
+                                exchange.close();
                             }
                             break;
                         case "update":
@@ -75,6 +70,7 @@ public class PostUserServiceHandler implements HttpHandler {
                             } else {
                                 response = "The user is unsuccessfully updated";
                                 sendResponse(exchange, 500, response);
+                                exchange.close();
                             }
                             break;
                         case "delete":
@@ -86,18 +82,24 @@ public class PostUserServiceHandler implements HttpHandler {
                             } else {
                                 response = "The user is unsuccessfully deleted";
                                 sendResponse(exchange, 500, response);
+                                exchange.close();
                             }
                             break;
                     default:
                         sendResponse(exchange, 400, "Invalid command");
+                        exchange.close();
                         break;
                     }
                 }
             } catch (NumberFormatException e) {
                 sendResponse(exchange, 400, "Invalid ID format");
+                exchange.close();
             }
+        } else if ("GET".equals(exchange.getRequestMethod())) {
+            sendResponse(exchange, 200, "User Service Endpoint");
         } else {
             sendResponse(exchange, 405, "Method Not Allowed");
+            exchange.close();
         }
     }
 

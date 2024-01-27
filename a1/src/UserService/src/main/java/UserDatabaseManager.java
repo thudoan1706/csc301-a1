@@ -99,7 +99,6 @@ public class UserDatabaseManager {
     
     public boolean createNewUser(Map<String, Object> requestBodyMap) throws IOException {
         try {
-            System.out.println("Hello");
             int id;
             Object idObject = requestBodyMap.get("id");
             if (idObject instanceof Integer) {
@@ -107,7 +106,6 @@ public class UserDatabaseManager {
             } else {
                 id = Integer.parseInt(idObject.toString());
             }
-            System.out.println("Hello");
 
             if (!isUserPresent(id)) {
                 User newUser = new User(
@@ -118,7 +116,6 @@ public class UserDatabaseManager {
                 );
                 existingUsers.add(newUser);
                 storeUsersToJson();
-                System.out.println("Hello");
 
                 return true;
             } else {
