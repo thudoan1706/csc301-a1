@@ -13,7 +13,7 @@ jar_lib=$compiled_dir/lib/
 
 while getopts ":uc" opt; do
   case $opt in
-    u)  echo "Hello"
+    u)  #USER SERVICE
         data=$compiled_dir/UserService/data
 
         # Create the bin directory if it doesn't exist
@@ -25,6 +25,9 @@ while getopts ":uc" opt; do
 
         # Compile User Services
         javac -source 11 -target 11 -d "$us_bin" -cp "$jar_lib/jackson-annotations-2.7.9.jar:$jar_lib/jackson-core-2.7.9.jar:$jar_lib/jackson-databind-2.7.9.jar" "$userSrcFile"/*.java;;
+    
+        #TODO OTHER SERVICES
+    
     c)
         us_dir="$compiled_dir/UserService"
 
