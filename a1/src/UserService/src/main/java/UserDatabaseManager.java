@@ -35,23 +35,31 @@ public class UserDatabaseManager {
     }
 
 
-    public boolean updateExistingUser(Map<String, String> requestBodyMap) {
+    public boolean updateExistingUser(Map<String, Object> requestBodyMap) {
         try {
-            int id = Integer.parseInt(requestBodyMap.get("id"));
+            int id;         
+            Object idObject = requestBodyMap.get("id");
+            if (idObject instanceof Integer) {
+                id = (Integer) idObject;
+            } else {
+                id = Integer.parseInt(idObject.toString());
+            }
             boolean isPresent = isUserPresent(id);
             if (isPresent) {
-                String username = requestBodyMap.getOrDefault("username", null);
-                String email = requestBodyMap.getOrDefault("email", null);
-                String password = requestBodyMap.getOrDefault("password", null);
+                String username = (String) requestBodyMap.getOrDefault("username", null);
+                String email = (String) requestBodyMap.getOrDefault("email", null);
+                String password = (String) requestBodyMap.getOrDefault("password", null);
         
                 existingUsers = existingUsers.stream()
-                        .filter(eu -> eu.getId() == id)
-                        .map(eu -> {
-                            eu.setEmail(Objects.requireNonNullElse(email, eu.getEmail()));
-                            eu.setUsername(Objects.requireNonNullElse(username, eu.getUsername()));
-                            eu.setPassword(Objects.requireNonNullElse(password, eu.getPassword()));
-                            return eu;
-                        }).collect(Collectors.toList());
+                            .map(eu -> {
+                                if (eu.getId() == id) {
+                                    eu.setEmail(Objects.requireNonNullElse(email, eu.getEmail()));
+                                    eu.setUsername(Objects.requireNonNullElse(username, eu.getUsername()));
+                                    eu.setPassword(Objects.requireNonNullElse(password, eu.getPassword()));
+                                }
+                                return eu;
+                            })
+                            .collect(Collectors.toList());
                 storeUsersToJson();
                 return true;
             }
@@ -62,20 +70,26 @@ public class UserDatabaseManager {
         }
     }
     
-    public boolean deleteExistingUser(Map<String, String> requestBodyMap) throws IOException {
+    public boolean deleteExistingUser(Map<String, Object> requestBodyMap) throws IOException {
         try {
-            int id = Integer.parseInt(requestBodyMap.get("id"));
-            String username = requestBodyMap.getOrDefault("username", null);
-            String email = requestBodyMap.getOrDefault("email", null);
-            String password = requestBodyMap.getOrDefault("password", null);
-        
-            existingUsers.removeIf(existingUser ->
+            int id;
+            String username = (String) requestBodyMap.getOrDefault("username", null);
+            String email = (String) requestBodyMap.getOrDefault("email", null);
+            String password = (String) requestBodyMap.getOrDefault("password", null);
+
+            Object idObject = requestBodyMap.get("id");
+            if (idObject instanceof Integer) {
+                id = (Integer) idObject;
+            } else {
+                id = Integer.parseInt(idObject.toString());
+            }
+            boolean isDeleted = existingUsers.removeIf(existingUser ->
                     existingUser.getId() == id &&
                     existingUser.getEmail().equals(email) &&
                     existingUser.getUsername().equals(username) &&
                     existingUser.getPassword().equals(password));
             storeUsersToJson();
-            return true;
+            return isDeleted;
         } catch (IOException e) {
             // handle IO exception, such as file not found or permission issues
             e.printStackTrace();
@@ -83,21 +97,29 @@ public class UserDatabaseManager {
         }
     }
     
-    public boolean createNewUser(Map<String, String> requestBodyMap) throws IOException {
+    public boolean createNewUser(Map<String, Object> requestBodyMap) throws IOException {
         try {
             System.out.println("Hello");
-            int id = Integer.parseInt(requestBodyMap.get("id"));
+            int id;
+            Object idObject = requestBodyMap.get("id");
+            if (idObject instanceof Integer) {
+                id = (Integer) idObject;
+            } else {
+                id = Integer.parseInt(idObject.toString());
+            }
             System.out.println("Hello");
 
             if (!isUserPresent(id)) {
                 User newUser = new User(
                         id,
-                        requestBodyMap.get("username"),
-                        requestBodyMap.get("email"),
-                        requestBodyMap.get("password")
+                        (String) requestBodyMap.get("username"),
+                        (String) requestBodyMap.get("email"),
+                        (String) requestBodyMap.get("password")
                 );
                 existingUsers.add(newUser);
                 storeUsersToJson();
+                System.out.println("Hello");
+
                 return true;
             } else {
                 return false;

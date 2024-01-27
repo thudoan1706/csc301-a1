@@ -20,12 +20,40 @@ public class PostUserServiceHandler implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         if ("POST".equals(exchange.getRequestMethod())) {
             try {
-                Map<String, String> requestBodyMap = processRequestBody(exchange);
+                Map<String, Object> requestBodyMap = processRequestBody(exchange);
+                // String requestURI = exchange.getRequestURI().toString();
+                String requestMethod = exchange.getRequestMethod();
+                String clientAddress = exchange.getRemoteAddress().getAddress().toString();
+                String requestURI = exchange.getRequestURI().toString();
+
+                System.out.println("Request method: " + requestMethod);
+                System.out.println("Client Address: " + clientAddress);
+                System.out.println("Request URI: " + requestURI);
                 if (requestBodyMap != null) {
-                    String command = requestBodyMap.get("command");
-                    int id = Integer.parseInt(requestBodyMap.get("id"));
-                    String userURI = "/user/" + id;
+                    int id;
                     String response;
+                    Object objectID = requestBodyMap.get("id");
+                    String command = (String) requestBodyMap.get("command");
+                    System.out.println("Request URI: " + requestURI);
+                    // Assuming exchange is an HttpExchange object
+                    System.out.println("Request Body: " + requestBodyMap);
+                    System.out.println("Object ID: " + objectID);
+                    System.out.println("Object ID Type: " + objectID.getClass().getName());
+
+                    // Check if 'id' is present and of type Integer
+                    if (objectID instanceof Integer) {
+                        // Cast 'id' to Integer
+                        id = (Integer) objectID;
+                        System.out.println("Request URI: " + requestURI);
+
+                        // Now 'id' can be used as an int
+                    } else {
+                        id = Integer.parseInt(objectID.toString());
+                        System.out.println("Request: " + requestURI);
+
+                    }
+                    String userURI = "/user/" + id;
+                    System.out.println("Hello: " + requestURI);
 
                     switch (command) {
                         case "create":
@@ -60,9 +88,9 @@ public class PostUserServiceHandler implements HttpHandler {
                                 sendResponse(exchange, 500, response);
                             }
                             break;
-                        default:
-                            sendResponse(exchange, 400, "Invalid command");
-                            break;
+                    default:
+                        sendResponse(exchange, 400, "Invalid command");
+                        break;
                     }
                 }
             } catch (NumberFormatException e) {
@@ -91,7 +119,7 @@ public class PostUserServiceHandler implements HttpHandler {
         }
     }
 
-    private static Map<String, String> processRequestBody(HttpExchange exchange) {
+    private static Map<String, Object> processRequestBody(HttpExchange exchange) {
         try {
             String requestBody = getRequestBody(exchange);
 
