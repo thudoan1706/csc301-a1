@@ -7,4 +7,10 @@ us_bin=./bin
 us_lib=../lib
 
 # Run Java program
-java -cp "$us_bin:$us_lib/jackson-annotations-2.7.9.jar:$us_lib/jackson-core-2.7.9.jar:$us_lib/jackson-databind-2.7.9.jar" UserServer
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+    # Windows
+    java -cp "$us_bin;$us_lib/*" UserServer
+else
+    # Unix-like (Linux, macOS)
+    java -cp "$us_bin:$us_lib/*" UserServer
+fi
