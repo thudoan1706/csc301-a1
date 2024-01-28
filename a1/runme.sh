@@ -24,7 +24,7 @@ while getopts ":uc" opt; do
         mkdir -p "$data"
 
         # Compile User Services
-        javac -source 11 -target 11 -d "$us_bin" -cp "$jar_lib/jackson-annotations-2.7.9.jar:$jar_lib/jackson-core-2.7.9.jar:$jar_lib/jackson-databind-2.7.9.jar" "$userSrcFile"/*.java;;
+        javac -d "$us_bin" -cp "$jar_lib/jackson-annotations-2.7.9.jar:$jar_lib/jackson-core-2.7.9.jar:$jar_lib/jackson-databind-2.7.9.jar" "$userSrcFile"/*.java;;
     
         #TODO OTHER SERVICES
     
