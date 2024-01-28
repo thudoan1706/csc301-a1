@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 import com.sun.net.httpserver.HttpServer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class PostUserServiceHandler implements HttpHandler {
 
@@ -20,70 +21,89 @@ public class PostUserServiceHandler implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         if ("POST".equals(exchange.getRequestMethod())) {
             try {
+                printRequestDetails(exchange);
                 Map<String, Object> requestBodyMap = processRequestBody(exchange);
-                // String requestURI = exchange.getRequestURI().toString();
-                String requestMethod = exchange.getRequestMethod();
-                String clientAddress = exchange.getRemoteAddress().getAddress().toString();
-                String requestURI = exchange.getRequestURI().toString();
 
-                System.out.println("Request method: " + requestMethod);
-                System.out.println("Client Address: " + clientAddress);
-                System.out.println("Request URI: " + requestURI);
+                boolean hasEmptyValue = requestBodyMap.values().stream()
+                                    .anyMatch(value -> value instanceof String && ((String) value).isEmpty());
+
+                System.out.println("Has Empty Value: " + hasEmptyValue);
+
+
                 if (requestBodyMap != null) {
                     int id;
                     String response;
+                    int statusCode;
                     Object objectID = requestBodyMap.get("id");
                     String command = (String) requestBodyMap.get("command");  
+                    requestBodyMap.remove("command");
+                    Map<String,String> stringMap = requestBodyMap.entrySet().stream()
+                            .collect(Collectors.toMap(Map.Entry::getKey, e -> (String)e.getValue()));
+                    ObjectMapper objectMapper = new ObjectMapper();
                     // Check if 'id' is present and of type Integer
                     if (objectID instanceof Integer) {
                         // Cast 'id' to Integer
                         id = (Integer) objectID;
-                        System.out.println("Request URI: " + requestURI);
-
-                        // Now 'id' can be used as an int
                     } else {
                         id = Integer.parseInt(objectID.toString());
-                        System.out.println("Request: " + requestURI);
-
                     }
                     String userURI = "/user/" + id;
-                    System.out.println("Hello: " + requestURI);
 
                     switch (command) {
+                        
                         case "create":
-                            Boolean isCreated = db.createNewUser(requestBodyMap);
-                            if (isCreated) {
-                                response = "The user is successfully created";
-                                server.createContext(userURI, new GetUserServiceHandler());
-                                sendResponse(exchange, 200, response);
+                            if (hasEmptyValue) {
+                                statusCode = 400;
+                                response = "";
                             } else {
-                                response = "The user is unsuccessfully created";
-                                sendResponse(exchange, 500, response);
-                                exchange.close();
+                                statusCode = db.createNewUser(requestBodyMap, id);
+                                if (statusCode == 200) {
+                                    System.out.println("The user is successfully created");
+                                    response = objectMapper.writeValueAsString(stringMap);
+                                                        
+                                    server.createContext(userURI, new GetUserServiceHandler());
+                                } else if (statusCode == 409) {
+                                    response = "The user already exists";
+                                } else {
+                                    response = "Internal Server Error";
+                                }
                             }
+                            sendResponse(exchange, statusCode, response);
+                            exchange.close();
                             break;
+
                         case "update":
-                            Boolean isUpdated = db.updateExistingUser(requestBodyMap);
-                            if (isUpdated) {
-                                response = "The user is successfully updated";
-                                sendResponse(exchange, 200, response);
+                            statusCode = db.updateExistingUser(requestBodyMap, id);
+                            if (statusCode == 200) {
+                                System.out.println("The user is successfully updated");
+                                response =  objectMapper.writeValueAsString(db.getUser(id));
+                            } else if (statusCode == 400) {
+                                response = "The user is not found";
                             } else {
-                                response = "The user is unsuccessfully updated";
-                                sendResponse(exchange, 500, response);
-                                exchange.close();
+                                response = "Internal Server Error";
                             }
+                            sendResponse(exchange, statusCode, response);
+                            exchange.close();
                             break;
+
                         case "delete":
-                            Boolean isDeleted = db.deleteExistingUser(requestBodyMap);
-                            if (isDeleted) {
-                                response = "The user is successfully deleted";
-                                server.removeContext(userURI);
-                                sendResponse(exchange, 200, response);
+                            if (hasEmptyValue) {
+                                statusCode = 400;
+                                response = "";
                             } else {
-                                response = "The user is unsuccessfully deleted";
-                                sendResponse(exchange, 500, response);
-                                exchange.close();
+                                statusCode = db.deleteExistingUser(requestBodyMap, id);
+                                if (statusCode == 200) {
+                                    System.out.println("The user is successfully deleted");
+                                    response =  objectMapper.writeValueAsString(db.getUser(id));
+                                    server.removeContext(userURI);
+                                } else if (statusCode == 400) {
+                                    response = "The user is not found";
+                                } else {
+                                    response = "Internal Server Error";
+                                }
                             }
+                            sendResponse(exchange, statusCode, response);
+                            exchange.close();
                             break;
                     default:
                         sendResponse(exchange, 400, "Invalid command");
@@ -125,13 +145,30 @@ public class PostUserServiceHandler implements HttpHandler {
         try {
             String requestBody = getRequestBody(exchange);
 
-            return Arrays.stream(requestBody.split("&"))
-                    .map(pair -> pair.split("="))
-                    .filter(keyValue -> keyValue.length == 2)
-                    .collect(Collectors.toMap(keyValue -> keyValue[0], keyValue -> keyValue[1]));
+            Map<String, Object> hello = Arrays.stream(requestBody.split("&"))
+                        .map(pair -> pair.split("="))
+                        .collect(Collectors.toMap(
+                                keyValue -> keyValue[0],
+                                keyValue -> keyValue.length == 2 ? (String) keyValue[1] : "",
+                                (existingValue, newValue) -> ((String) newValue).isEmpty() ? existingValue : newValue
+                        ));
+            System.out.println(hello);
+            return hello;
+
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
     }
+
+    private void printRequestDetails(HttpExchange exchange) {
+        String requestMethod = exchange.getRequestMethod();
+        String clientAddress = exchange.getRemoteAddress().getAddress().toString();
+        String requestURI = exchange.getRequestURI().toString();
+    
+        System.out.println("Request method: " + requestMethod);
+        System.out.println("Client Address: " + clientAddress);
+        System.out.println("Request URI: " + requestURI);
+    }
+    
 }

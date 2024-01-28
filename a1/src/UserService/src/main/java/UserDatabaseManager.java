@@ -29,84 +29,71 @@ public class UserDatabaseManager {
             responseBodyMap.put("id", String.valueOf(user.getId()));
             responseBodyMap.put("username", user.getUsername());
             responseBodyMap.put("email", user.getEmail());
+            responseBodyMap.put("password", user.getPassword());
         }
         
         return responseBodyMap;
     }
 
 
-    public boolean updateExistingUser(Map<String, Object> requestBodyMap) {
+    public int updateExistingUser(Map<String, Object> requestBodyMap, int id) {
         try {
-            int id;         
-            Object idObject = requestBodyMap.get("id");
-            if (idObject instanceof Integer) {
-                id = (Integer) idObject;
-            } else {
-                id = Integer.parseInt(idObject.toString());
+            boolean isPresent = isUserPresent(id);
+            if (isPresent) {
+                System.out.println("Hello\n");
+                String username = (String) requestBodyMap.get("username");
+                String email = (String) requestBodyMap.get("email");
+                String password = (String) requestBodyMap.get("password");
+                System.out.println("Hello\n");
+
+                existingUsers = existingUsers.stream().map(eu -> 
+                        {
+                            if (eu.getId() == id) {
+                                // Use Objects.requireNonNullElse only if the replacement value is not an empty string
+                                eu.setEmail(email.isEmpty() ? eu.getEmail() : Objects.requireNonNullElse(email, eu.getEmail()));
+                                eu.setUsername(username.isEmpty() ? eu.getUsername() : Objects.requireNonNullElse(username, eu.getUsername()));
+                                eu.setPassword(password.isEmpty() ? eu.getPassword() : Objects.requireNonNullElse(password, eu.getPassword()));
+                            }
+                            return eu;
+                        }).collect(Collectors.toList());
+                System.out.println("Hello\n");
+                storeUsersToJson();
+                System.out.println("Hello\n");
+                return 200;
             }
+            return 404;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return 500;
+        }
+    }
+    
+    public int deleteExistingUser(Map<String, Object> requestBodyMap, int id) throws IOException {
+        try {
             boolean isPresent = isUserPresent(id);
             if (isPresent) {
                 String username = (String) requestBodyMap.getOrDefault("username", null);
                 String email = (String) requestBodyMap.getOrDefault("email", null);
                 String password = (String) requestBodyMap.getOrDefault("password", null);
-        
-                existingUsers = existingUsers.stream()
-                            .map(eu -> {
-                                if (eu.getId() == id) {
-                                    eu.setEmail(Objects.requireNonNullElse(email, eu.getEmail()));
-                                    eu.setUsername(Objects.requireNonNullElse(username, eu.getUsername()));
-                                    eu.setPassword(Objects.requireNonNullElse(password, eu.getPassword()));
-                                }
-                                return eu;
-                            })
-                            .collect(Collectors.toList());
-                storeUsersToJson();
-                return true;
-            }
-            return false;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-    
-    public boolean deleteExistingUser(Map<String, Object> requestBodyMap) throws IOException {
-        try {
-            int id;
-            String username = (String) requestBodyMap.getOrDefault("username", null);
-            String email = (String) requestBodyMap.getOrDefault("email", null);
-            String password = (String) requestBodyMap.getOrDefault("password", null);
 
-            Object idObject = requestBodyMap.get("id");
-            if (idObject instanceof Integer) {
-                id = (Integer) idObject;
-            } else {
-                id = Integer.parseInt(idObject.toString());
+                existingUsers.removeIf(existingUser ->
+                        existingUser.getId() == id &&
+                        existingUser.getEmail().equals(email) &&
+                        existingUser.getUsername().equals(username) &&
+                        existingUser.getPassword().equals(password));
+                storeUsersToJson();
+                return 200;
             }
-            boolean isDeleted = existingUsers.removeIf(existingUser ->
-                    existingUser.getId() == id &&
-                    existingUser.getEmail().equals(email) &&
-                    existingUser.getUsername().equals(username) &&
-                    existingUser.getPassword().equals(password));
-            storeUsersToJson();
-            return isDeleted;
+            return 400;
         } catch (IOException e) {
             // handle IO exception, such as file not found or permission issues
             e.printStackTrace();
-            return false;
+            return 500;
         }
     }
     
-    public boolean createNewUser(Map<String, Object> requestBodyMap) throws IOException {
+    public int createNewUser(Map<String, Object> requestBodyMap, int id) throws IOException {
         try {
-            int id;
-            Object idObject = requestBodyMap.get("id");
-            if (idObject instanceof Integer) {
-                id = (Integer) idObject;
-            } else {
-                id = Integer.parseInt(idObject.toString());
-            }
-
             if (!isUserPresent(id)) {
                 User newUser = new User(
                         id,
@@ -117,13 +104,13 @@ public class UserDatabaseManager {
                 existingUsers.add(newUser);
                 storeUsersToJson();
 
-                return true;
+                return 200;
             } else {
-                return false;
+                return 409;
             }
         } catch (IOException e) {
             e.printStackTrace();
-            return false;
+            return 500;
         }
     }
     
