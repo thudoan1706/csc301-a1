@@ -24,8 +24,6 @@ class HttpHandler:
 
     def handle_response(self, response, method):
         try:
-            response.raise_for_status()
-
             if response.status_code == 200:
                 print(f"{method} request worked: {response.status_code}")
                 print("Response:", response.json())
@@ -34,16 +32,3 @@ class HttpHandler:
                 print("Response:", response.text)
         except requests.RequestException as e:
             print(f"Error handling {method} response: {e}")
-
-def make_post_request(url, data):
-    try:
-        headers = {'Content-Type' : 'application/json', 'Authorization' : 'Bearer_your_token'}
-        response = requests.post(url, data=data, headers=headers)
-        if response.status_code == 200:
-            print(f"POST request did work: {response.status_code}")
-            print("Response: ", response.text)
-        else:
-            print(f"POST request did not work: {response.status_code}")
-            print("Response: ", response.text)
-    except Exception as e:
-        print(e)

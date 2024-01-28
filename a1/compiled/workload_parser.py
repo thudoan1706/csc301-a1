@@ -12,9 +12,8 @@ class WorkloadParser:
             with open(self.file_path, 'r') as workload_file:
                 for line in workload_file:
                     payload=self.parse_payload(line.strip())
-                    print(payload)
-                    client = HttpHandler(base_url='http://127.0.0.1:8081')
-                    client.make_post_request(endpoint="/order", data=payload)
+                    client = HttpHandler(base_url='http://127.0.0.1:8083')
+                    client.make_post_request(endpoint="user", data=payload)
                             
         except FileNotFoundError:
             print(f"File not found: {self.file_path}")
@@ -27,8 +26,7 @@ class WorkloadParser:
         service = line_tokens[0].upper()
         if service == "USER":
             payload = self.parse_user_payload(line_tokens[1:])
-            print(payload)
-            print(payload)
+
         elif service == "PRODUCT":
             payload = self.parse_product_payload(line_tokens[1:])
         elif service == 'ORDER':
@@ -49,10 +47,14 @@ class WorkloadParser:
         # Mapping of token prefixes to corresponding indices in user_tokens
         token_prefix_mapping = {
             "username:un-": 2,
+            "username:": 2,
             "username": 2,
             "email:": 3,
             "password:": 4
         }
+
+        email_index = 3
+        password_index = 4
 
         # Extract values from line_tokens and clean them
         user_tokens[0] = line_tokens[0]  # Assuming "command" is at index 0
@@ -65,12 +67,17 @@ class WorkloadParser:
                     token = token.split(prefix)[1]
                     user_tokens[index] = token
                     
-        for index, key in [(3, 'email'), (4, 'password')]:
-            user_tokens[index] = '' if user_tokens[index] == '' and \
-                (len(line_tokens) <= index or line_tokens[index] == '') else line_tokens[index]
-        
+        # Check if the email and password values are not empty before extracting
+        if email_index < len(line_tokens) and line_tokens[email_index] != '':
+            user_tokens[email_index] = line_tokens[email_index]
+
+        if password_index < len(line_tokens) and line_tokens[password_index] != '':
+            user_tokens[password_index] = line_tokens[password_index]
+                           
         # Create a dictionary by pairing keys with values from user_tokens
         user_dict = {key: value for key, value in zip(keys_payload, user_tokens)}
+
+        print(user_dict)
         return user_dict
     
     
