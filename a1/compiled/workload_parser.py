@@ -12,8 +12,8 @@ class WorkloadParser:
             with open(self.file_path, 'r') as workload_file:
                 for line in workload_file:
                     payload=self.parse_payload(line.strip())
-                    client = HttpHandler(base_url='http://127.0.0.1:8083')
-                    client.make_post_request(endpoint="user", data=payload)
+                    client = HttpHandler(base_url='http://127.0.0.1:8081')
+                    client.make_post_request(endpoint="order", data=payload)
                             
         except FileNotFoundError:
             print(f"File not found: {self.file_path}")
