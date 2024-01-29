@@ -5,11 +5,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class GetUserServiceHandler implements HttpHandler {
+public class GetUserHandler implements HttpHandler {
 
     private static UserDatabaseManager db;
 
-    public GetUserServiceHandler() {
+    public GetUserHandler() {
         db = new UserDatabaseManager();
     }
 

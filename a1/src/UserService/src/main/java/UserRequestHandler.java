@@ -11,13 +11,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 
 
-public class PostUserServiceHandler implements HttpHandler {
+public class UserRequestHandler implements HttpHandler {
 
     private final HttpServer server;
     private final UserDatabaseManager db;
     private final ExecutorService threadPool;
 
-    public PostUserServiceHandler(HttpServer userServer,  ExecutorService httpThreadPool) {
+    public UserRequestHandler(HttpServer userServer,  ExecutorService httpThreadPool) {
         server = userServer;
         threadPool = httpThreadPool;
         db = new UserDatabaseManager();
@@ -58,7 +58,7 @@ public class PostUserServiceHandler implements HttpHandler {
                                 for (User user : existingUsers) {
                                     int userId = user.getId();
                                     userURI = "/user/" + userId;
-                                    server.createContext(userURI, new GetUserServiceHandler());
+                                    server.createContext(userURI, new GetUserHandler());
                                 }
                                 response = objectMapper.writeValueAsString(existingUsers);
                                 sendResponse(exchange, statusCode=200, response);
@@ -83,7 +83,7 @@ public class PostUserServiceHandler implements HttpHandler {
                                 if (statusCode == 200) {
                                     System.out.println("The user is successfully created");
                                     response = objectMapper.writeValueAsString(stringMap);      
-                                    server.createContext(userURI, new GetUserServiceHandler());
+                                    server.createContext(userURI, new GetUserHandler());
                                 } else if (statusCode == 409) {
                                     response = "The user already exists";
                                 } else {
