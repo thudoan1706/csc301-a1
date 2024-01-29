@@ -30,13 +30,12 @@ public class UserDatabaseManager {
             responseBodyMap.put("username", user.getUsername());
             responseBodyMap.put("email", user.getEmail());
             responseBodyMap.put("password", user.getPassword());
-        }
-        
+        } 
         return responseBodyMap;
     }
 
 
-    public int updateExistingUser(Map<String, Object> requestBodyMap, int id) {
+    public int updateExistingUser(Map<String, String> requestBodyMap, int id) {
         try {
             boolean isPresent = isUserPresent(id);
             if (isPresent) {
@@ -68,7 +67,7 @@ public class UserDatabaseManager {
         }
     }
     
-    public int deleteExistingUser(Map<String, Object> requestBodyMap, int id) throws IOException {
+    public int deleteExistingUser(Map<String, String> requestBodyMap, int id) throws IOException {
         try {
             boolean isPresent = isUserPresent(id);
             if (isPresent) {
@@ -92,7 +91,7 @@ public class UserDatabaseManager {
         }
     }
     
-    public int createNewUser(Map<String, Object> requestBodyMap, int id) throws IOException {
+    public int createNewUser(Map<String, String> requestBodyMap, int id) throws IOException {
         try {
             if (!isUserPresent(id)) {
                 User newUser = new User(
@@ -133,7 +132,7 @@ public class UserDatabaseManager {
     }
 
     // Function to check if a user with a specific ID is present
-    private static boolean isUserPresent(int id) {
+    public boolean isUserPresent(int id) {
         for (User existingUser : existingUsers) {
             if (existingUser.getId() == id) {
                 return true; // User with the same ID is present
@@ -142,7 +141,7 @@ public class UserDatabaseManager {
         return false; // User is not present in the list
     }
 
-    private List<User> getAllUsers() {
+    public List<User> getAllUsers() {
         try {
             // Read the existing list of users from the JSON file
             ObjectMapper objectMapper = new ObjectMapper();
