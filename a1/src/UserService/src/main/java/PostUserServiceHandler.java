@@ -6,14 +6,20 @@ import java.util.*;
 import java.util.stream.Collectors;
 import com.sun.net.httpserver.HttpServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+
 
 public class PostUserServiceHandler implements HttpHandler {
 
     private final HttpServer server;
     private final UserDatabaseManager db;
+    private final ExecutorService threadPool;
 
-    public PostUserServiceHandler(HttpServer userServer) {
+    public PostUserServiceHandler(HttpServer userServer,  ExecutorService httpThreadPool) {
         server = userServer;
+        threadPool = httpThreadPool;
         db = new UserDatabaseManager();
     }
 
@@ -22,7 +28,7 @@ public class PostUserServiceHandler implements HttpHandler {
         if ("POST".equals(exchange.getRequestMethod())) {
             try {
                 printRequestDetails(exchange);
-                Map<String, Object> requestBodyMap = processRequestBody(exchange);
+                Map<String, String> requestBodyMap = getRequestBody(exchange);
 
                 boolean hasEmptyValue = requestBodyMap.values().stream()
                                     .anyMatch(value -> value instanceof String && ((String) value).isEmpty());
@@ -34,20 +40,37 @@ public class PostUserServiceHandler implements HttpHandler {
                     int id;
                     String response;
                     int statusCode;
-                    Object objectID = requestBodyMap.get("id");
+                    String userURI;
+                    ObjectMapper objectMapper = new ObjectMapper();
+
+                    String objectID = (String) requestBodyMap.getOrDefault("id", "");
                     String command = (String) requestBodyMap.get("command");  
                     requestBodyMap.remove("command");
+                    if (objectID.isEmpty()) {
+                        switch (command) {
+                            case "shutdown":
+                                server.stop(5);
+                                threadPool.shutdownNow();
+                            case "restart":
+                                server.start();
+                                List<User> existingUsers = db.getAllUsers();
+
+                                for (User user : existingUsers) {
+                                    int userId = user.getId();
+                                    userURI = "/user/" + userId;
+                                    server.createContext(userURI, new GetUserServiceHandler());
+                                }
+                                response = objectMapper.writeValueAsString(existingUsers);
+                                sendResponse(exchange, statusCode=200, response);
+                                exchange.close();
+                                break;
+                        }
+                    }
+                    id = Integer.parseInt(objectID);
+                    userURI = "/user/" + id;
                     Map<String,String> stringMap = requestBodyMap.entrySet().stream()
                             .collect(Collectors.toMap(Map.Entry::getKey, e -> (String)e.getValue()));
-                    ObjectMapper objectMapper = new ObjectMapper();
                     // Check if 'id' is present and of type Integer
-                    if (objectID instanceof Integer) {
-                        // Cast 'id' to Integer
-                        id = (Integer) objectID;
-                    } else {
-                        id = Integer.parseInt(objectID.toString());
-                    }
-                    String userURI = "/user/" + id;
 
                     switch (command) {
                         
@@ -59,8 +82,7 @@ public class PostUserServiceHandler implements HttpHandler {
                                 statusCode = db.createNewUser(requestBodyMap, id);
                                 if (statusCode == 200) {
                                     System.out.println("The user is successfully created");
-                                    response = objectMapper.writeValueAsString(stringMap);
-                                                        
+                                    response = objectMapper.writeValueAsString(stringMap);      
                                     server.createContext(userURI, new GetUserServiceHandler());
                                 } else if (statusCode == 409) {
                                     response = "The user already exists";
@@ -105,6 +127,8 @@ public class PostUserServiceHandler implements HttpHandler {
                             sendResponse(exchange, statusCode, response);
                             exchange.close();
                             break;
+                    
+
                     default:
                         sendResponse(exchange, 400, "Invalid command");
                         exchange.close();
@@ -130,34 +154,16 @@ public class PostUserServiceHandler implements HttpHandler {
         }
     }
 
-    private static String getRequestBody(HttpExchange exchange) throws IOException {
+    private static Map<String, String> getRequestBody(HttpExchange exchange) throws IOException {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
             StringBuilder requestBody = new StringBuilder();
             String line;
             while ((line = br.readLine()) != null) {
                 requestBody.append(line);
             }
-            return requestBody.toString();
-        }
-    }
 
-    private static Map<String, Object> processRequestBody(HttpExchange exchange) {
-        try {
-            String requestBody = getRequestBody(exchange);
-
-            Map<String, Object> hello = Arrays.stream(requestBody.split("&"))
-                        .map(pair -> pair.split("="))
-                        .collect(Collectors.toMap(
-                                keyValue -> keyValue[0],
-                                keyValue -> keyValue.length == 2 ? (String) keyValue[1] : "",
-                                (existingValue, newValue) -> ((String) newValue).isEmpty() ? existingValue : newValue
-                        ));
-            System.out.println(hello);
-            return hello;
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readValue(requestBody.toString(), new TypeReference<HashMap<String, String>>() {});
         }
     }
 
