@@ -8,7 +8,7 @@ class HttpHandler:
     def make_post_request(self, endpoint, data):
         try:
             url = f'{self.base_url}/{endpoint}'
-            response = requests.post(url, data=data, headers=self.headers)
+            response = requests.post(url, json=data, headers=self.headers)
             self.handle_response(response, 'POST')
         except requests.RequestException as e:
             print(f"Error making POST request: {e}")

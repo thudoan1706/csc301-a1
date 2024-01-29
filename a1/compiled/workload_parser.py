@@ -11,8 +11,9 @@ class WorkloadParser:
         try:
             with open(self.file_path, 'r') as workload_file:
                 for line in workload_file:
-                    payload=self.parse_payload(line.strip())
+                    payload=self.process_payload(line.strip())
                     client = HttpHandler(base_url='http://127.0.0.1:8081')
+                    # client.make_get_request(endpoint="user/4")
                     client.make_post_request(endpoint="order", data=payload)
                             
         except FileNotFoundError:
@@ -20,31 +21,44 @@ class WorkloadParser:
         except Exception as e:
             print(f"An error occurred: {e}")
 
-
-    def parse_payload(self, line: str):
+    def process_payload(self, line: str):
         line_tokens = line.split()
-        service = line_tokens[0].upper()
-        if service == "USER":
+        service = line_tokens[0].lower()
+        if service == "user":
             payload = self.parse_user_payload(line_tokens[1:])
-
-        elif service == "PRODUCT":
+            payload["command"]=line_tokens[1]
+        elif service == "product":
             payload = self.parse_product_payload(line_tokens[1:])
-        elif service == 'ORDER':
+            payload["command"]=line_tokens[1]
+            print(payload)
+        elif service == 'order':
             payload = self.parse_order_payload(line_tokens[1:])
+            payload["command"]=line_tokens[1]
         elif service == 'shutdown':
-            payload = {'command': service}
-        elif service == 'shutdown':
-            payload = {'command': service}
+            payload = {'command': 'shutdown'}
+        elif service == 'restart':
+            payload = {'command': 'restart'}
         else:
             raise Exception(f"Unknown service: {service}")
         return payload
 
-    def parse_user_payload(self, line_tokens: list[str]) -> dict:
-        # Define the payload and initialize user_tokens
-        keys_payload = ["command", "id", "username", "email", "password"]
-        user_tokens = [""] * 5
+    def parse_payload(self, line_tokens: list[str], keys_payload: list[str], token_prefix_mapping: dict) -> dict:
+        payload_tokens = [""] * len(keys_payload)
 
-        # Mapping of token prefixes to corresponding indices in user_tokens
+        for i, token in enumerate(line_tokens):
+            for prefix, index in token_prefix_mapping.items():
+                if i == 0:
+                    break
+                if prefix in token:
+                    token = token.split(prefix)[1]
+                payload_tokens[i] = token.lower()
+        # Create a dictionary by pairing keys with values from payload_tokens
+        payload_dict = {key: value for key, value in zip(keys_payload, payload_tokens)}
+        payload_dict["command"] = line_tokens[0]
+        return payload_dict
+
+    def parse_user_payload(self, line_tokens: list[str]) -> dict:
+        keys_payload = ["command", "id", "username", "email", "password"]
         token_prefix_mapping = {
             "username:un-": 2,
             "username:": 2,
@@ -52,91 +66,29 @@ class WorkloadParser:
             "email:": 3,
             "password:": 4
         }
+        return self.parse_payload(line_tokens, keys_payload, token_prefix_mapping)
 
-        email_index = 3
-        password_index = 4
-
-        # Extract values from line_tokens and clean them
-        user_tokens[0] = line_tokens[0]  # Assuming "command" is at index 0
-        user_tokens[1] = line_tokens[1]  # Assuming "id" is at index 1
-
-        for i, token in enumerate(line_tokens):
-            # Check for token prefixes and extract value accordingly
-            for prefix, index in token_prefix_mapping.items():
-                if prefix in token:
-                    token = token.split(prefix)[1]
-                    user_tokens[index] = token
-                    
-        # Check if the email and password values are not empty before extracting
-        if email_index < len(line_tokens) and line_tokens[email_index] != '':
-            user_tokens[email_index] = line_tokens[email_index]
-
-        if password_index < len(line_tokens) and line_tokens[password_index] != '':
-            user_tokens[password_index] = line_tokens[password_index]
-                           
-        # Create a dictionary by pairing keys with values from user_tokens
-        user_dict = {key: value for key, value in zip(keys_payload, user_tokens)}
-
-        print(user_dict)
-        return user_dict
-    
-    
     def parse_product_payload(self, line_tokens: list[str]) -> dict:
-        keys_payload = ["command", "id", "name", "description", "price", "quantity"]
-        product_tokens = [""] * 6
-
-        # Mapping of token prefixes to corresponding indices in product_tokens
+        keys_payload = ["command", "id", "productname", "description", "price", "quantity"]
         token_prefix_mapping = {
             "productname-": 2,
-            "productname": 2,
+            "productname:": 2,
             "name:": 2,
             "description:": 3,
             "price:": 4,
             "quantity:": 5
         }
+        return self.parse_payload(line_tokens, keys_payload, token_prefix_mapping)
 
-        # Extract values from line_tokens and clean them
-        for i, token in enumerate(line_tokens):
-            try:
-                # Check if the token can be converted to float
-                float(token)
-                product_tokens[1], product_tokens[4], product_tokens[5] = \
-                (token if product_tokens[i] == "" else product_tokens[i] for i in [1, 4, 5])
+    def parse_order_payload(self, line_tokens: list[str]) -> dict:
+        keys_payload = ["command", "product_id", 'user_id', 'quantity']
+        token_prefix_mapping = {
+            "product_id:": 1,
+            'user_id:': 2,
+            'quantity:': 3
+        }
+        return self.parse_payload(line_tokens, keys_payload, token_prefix_mapping)
 
-            except ValueError:                    
-                # Check for token prefixes and extract value accordingly
-                for prefix, index in token_prefix_mapping.items():
-                    if i == 0:
-                        break
-                    if prefix in token:
-                        token = token.split(prefix)[1]
-                product_tokens[i] = token.lower()
-
-        # Create a dictionary by pairing keys with values from product_tokens
-        product_dict = {key: value for key, value in zip(keys_payload, product_tokens)}
-        return product_dict
-    
-    def parse_order_payload(self, line_tokens: list[str]):
-        order_tokens = {'command': 'place_order', 'product_id':'', 'user_id': '', 'quantity': ''}
-
-        try:
-            order_tokens = {
-                'command': 'place_order',
-                'product_id': line_tokens[1] if len(line_tokens) > 1 else '',
-                'user_id': line_tokens[2] if len(line_tokens) == 4 else '1',
-                'quantity': line_tokens[3] if len(line_tokens) == 4 else (line_tokens[2] if len(line_tokens) == 3 else ''),
-            }
-
-            return order_tokens
-
-        except IndexError:
-            # Handle the case when the list index is out of range
-            print("Invalid input format: Not enough tokens")
-            return order_tokens
-        except Exception as e:
-            # Handle other exceptions if necessary
-            print(f"Error: {e}")
-            return order_tokens
    
 
 if __name__ == "__main__":
