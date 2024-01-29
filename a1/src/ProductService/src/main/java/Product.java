@@ -1,7 +1,7 @@
 public class Product {
     // Class attributes
     private int id;
-    private String productname;
+    private String name;
     private String description;
     private float price;
     private int quantity;
@@ -10,9 +10,9 @@ public class Product {
     public Product() {
 
     }
-    public Product(int id, String productname, String description, float price, int quantity) {
+    public Product(int id, String name, String description, float price, int quantity) {
         this.id = id;
-        this.productname = productname;
+        this.name = name;
         this.description = description;
         this.price = price;
         this.quantity = quantity;
@@ -31,8 +31,8 @@ public class Product {
         return quantity;
     }
 
-    public String getProductname() {
-        return productname;
+    public String getName() {
+        return name;
     }
 
     public String getDescription() {
@@ -48,8 +48,8 @@ public class Product {
         this.price = price;
     }
 
-    public void setProductname(String productname) {
-        this.productname = productname;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public void setDescription(String description) {
