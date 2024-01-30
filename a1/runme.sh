@@ -43,8 +43,11 @@ while getopts ":ucpow" opt; do
 
         # Compile User Services
         javac -d "$us_bin" -cp "$jar_lib/*" "$userSrcFile"/*.java
-
+    
+    p)
         #PRODUCT SERVICE
+        # Create a product service folder under compiled directory
+
         # Create the bin directory if it doesn't exist
         ps_bin=$compiled_dir/ProductService/bin
         mkdir -p "$ps_bin"
@@ -110,7 +113,7 @@ while getopts ":ucpow" opt; do
             exit 1
         fi
 
-        python3 workload_parser.py config.json
+        python3 workload_parser.py $2
     ;;
   esac
 done

@@ -17,7 +17,7 @@ class WorkloadParser:
                 order_endpoint = endpoints["OrderService"]
                 ip = order_endpoint.get("ip")
                 port = str(order_endpoint.get("port"))
-                address = f"{ip}:{port}"
+                address = f"http://{ip}:{port}"
                 print(address)
                 return address
         except (json.JSONDecodeError, FileNotFoundError) as e:
@@ -32,7 +32,7 @@ class WorkloadParser:
                     payload=self.process_payload(line.strip())
                     client = HttpHandler(base_url=self.client_address)
                     # client.make_get_request(endpoint="user/4")
-                    client.make_post_request(endpoint="order", data=payload)
+                    client.make_post_request(endpoint="user", data=payload)
                             
         except FileNotFoundError:
             print(f"File not found: {self.file_path}")

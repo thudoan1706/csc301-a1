@@ -55,16 +55,16 @@ public class UserRequestHandler implements HttpHandler {
                             handleCreate(exchange, id, hasEmptyValue, objectMapper, stringMap);
                             break;
                         case "update":
-                            handleUpdate(exchange, id, objectMapper);
+                            handleUpdate(exchange, id, objectMapper, stringMap);
                             break;
                         case "delete":
-                            handleDelete(exchange, id, hasEmptyValue, objectMapper);
+                            handleDelete(exchange, id, hasEmptyValue, objectMapper, stringMap);
                             break;
                         case "shutdown":
-                            handleShutdown();
+                            handleShutdown(exchange);
                             break;
                         case "restart":
-                            handleRestart(exchange, objectMapper);
+                            handleRestart(exchange);
                             break;
                         default:
                             sendResponse(exchange, 400, "Invalid command");
@@ -74,6 +74,9 @@ public class UserRequestHandler implements HttpHandler {
                 }
             } catch (NumberFormatException e) {
                 sendResponse(exchange, 400, "Invalid ID format");
+                exchange.close();
+            } catch (IOException e) {
+                sendResponse(exchange, 500, "Internal Server Error");
                 exchange.close();
             }
         } else if ("GET".equals(exchange.getRequestMethod())) {
@@ -105,9 +108,9 @@ public class UserRequestHandler implements HttpHandler {
         exchange.close();
     }
 
-    private void handleUpdate(HttpExchange exchange, int id, ObjectMapper objectMapper) throws IOException {
+    private void handleUpdate(HttpExchange exchange, int id, ObjectMapper objectMapper, Map<String, String> stringMap) throws IOException {
         String response;
-        int statusCode = db.updateExistingUser(getRequestBody(exchange), id);
+        int statusCode = db.updateExistingUser(stringMap, id);
         if (statusCode == 200) {
             System.out.println("The user is successfully updated");
             response = objectMapper.writeValueAsString(db.getUser(id));
@@ -120,14 +123,18 @@ public class UserRequestHandler implements HttpHandler {
         exchange.close();
     }
 
-    private void handleDelete(HttpExchange exchange, int id, boolean hasEmptyValue, ObjectMapper objectMapper) throws IOException {
+    private void handleDelete(HttpExchange exchange, int id, boolean hasEmptyValue, ObjectMapper objectMapper, Map<String, String> stringMap) throws IOException {
         String response;
         int statusCode;
         if (hasEmptyValue) {
             statusCode = 400;
             response = "";
         } else {
-            statusCode = db.deleteExistingUser(getRequestBody(exchange), id);
+            System.out.println("The user is in delete function deleted");
+
+            statusCode = db.deleteExistingUser(stringMap, id);
+            System.out.println("The user is in delete function deleted");
+
             if (statusCode == 200) {
                 System.out.println("The user is successfully deleted");
                 response = objectMapper.writeValueAsString(db.getUser(id));
@@ -141,21 +148,29 @@ public class UserRequestHandler implements HttpHandler {
         exchange.close();
     }
 
-    private void handleShutdown() {
-        server.stop(5);
-        threadPool.shutdownNow();
+    private void handleShutdown(HttpExchange exchange) {
+        try {
+            db.persistDataForBackUp();
+            db.removeOriginalStoredDataFile();
+            server.stop(3);
+            threadPool.shutdownNow();
+        } catch (IOException e) {
+            e.printStackTrace();
+            String errorMessage = "Failed to store data for backup after shutdown";
+            System.out.println(errorMessage);
+        }
     }
 
-    private void handleRestart(HttpExchange exchange, ObjectMapper objectMapper) throws IOException {
-        List<User> existingUsers = db.getAllUsers();
-
-        for (User user : existingUsers) {
-            int userId = user.getId();
-            String userURI = "/user/" + userId;
-            String response = objectMapper.writeValueAsString(user);
-            sendResponse(exchange, 200, response);
-        }
-        exchange.close();
+    private void handleRestart(HttpExchange exchange) throws IOException {
+        try { 
+            db.restoreDataToOriginalFile();
+            db.removeOBackUpStoredDataFile();
+            exchange.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            String errorMessage = "Failed to restore data from backup";
+            System.out.println(errorMessage);
+        }   
     }
 
     private void handleGet(HttpExchange exchange) throws IOException {

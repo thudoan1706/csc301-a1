@@ -12,6 +12,7 @@ import java.nio.file.StandardOpenOption;
 public class UserDatabaseManager {
 
     private static final String JSON_FILE_PATH = "./data/user.json";
+    private static final String BACKUP_FILE_PATH = "./data/backup.json";
     private static List<User> existingUsers;
 
     public UserDatabaseManager() {
@@ -35,7 +36,7 @@ public class UserDatabaseManager {
     }
 
 
-    public int updateExistingUser(Map<String, String> requestBodyMap, int id) {
+    public int updateExistingUser(Map<String, String> requestBodyMap, int id) throws IOException {
         try {
             boolean isPresent = isUserPresent(id);
             if (isPresent) {
@@ -69,6 +70,7 @@ public class UserDatabaseManager {
     
     public int deleteExistingUser(Map<String, String> requestBodyMap, int id) throws IOException {
         try {
+            System.out.println("Hello!");
             boolean isPresent = isUserPresent(id);
             if (isPresent) {
                 String username = (String) requestBodyMap.getOrDefault("username", null);
@@ -80,6 +82,7 @@ public class UserDatabaseManager {
                         existingUser.getEmail().equals(email) &&
                         existingUser.getUsername().equals(username) &&
                         existingUser.getPassword().equals(password));
+                System.out.println("Hello!");
                 storeUsersToJson();
                 return 200;
             }
@@ -155,6 +158,72 @@ public class UserDatabaseManager {
         } catch (IOException e) {
             e.printStackTrace(); // Handle the exception appropriately
             return new ArrayList<>();
+        }
+    }
+
+    public boolean persistDataForBackUp() throws IOException {
+        try {
+            // Write the updated list to the JSON file
+            ObjectMapper objectMapper = new ObjectMapper();
+            ObjectWriter objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
+            // Convert the list of users to a pretty-printed JSON string
+            String prettyJson = objectWriter.writeValueAsString(existingUsers);
+
+            // Write the JSON string to the file
+            Files.write(Paths.get(BACKUP_FILE_PATH), prettyJson.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace(); // Handle the exception appropriately
+            return false;
+        }
+    }
+
+    public void removeOriginalStoredDataFile() {
+        // Write the updated list to the JSON file
+        File file = new File(JSON_FILE_PATH);
+
+        // Use delete method to delete the file
+        if (file.delete()) {
+            System.out.println("File deleted successfully.");
+        } else {
+            System.out.println("Failed to delete the file.");
+        }
+    }
+
+    public void removeOBackUpStoredDataFile() {
+        // Write the updated list to the JSON file
+        File file = new File(BACKUP_FILE_PATH);
+
+        // Use delete method to delete the file
+        if (file.delete()) {
+            System.out.println("File deleted successfully.");
+        } else {
+            System.out.println("Failed to delete the file.");
+        }
+    }
+
+    public void restoreDataToOriginalFile() throws IOException {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            File originalFile = new File(JSON_FILE_PATH);
+            File backupFile = new File(BACKUP_FILE_PATH);
+
+            if (backupFile.exists()) {
+                // Read data from the backup file
+                List<User> restoredUsers = objectMapper.readValue(backupFile, new TypeReference<List<User>>() {});
+
+                // Perform any additional processing or validation if needed
+
+                // Write the restored data back to the original file
+                String prettyJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(restoredUsers);
+                Files.write(Paths.get(JSON_FILE_PATH), prettyJson.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            } else {
+                // Handle the case when the backup file doesn't exist
+                System.out.println("Backup file does not exist.");
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace(); // Handle the exception appropriately
         }
     }
 }
