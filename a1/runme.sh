@@ -44,7 +44,6 @@ while getopts ":ucpow" opt; do
         # Compile User Services
         javac -d "$us_bin" -cp "$jar_lib/*" "$userSrcFile"/*.java
     
-    p)
         #PRODUCT SERVICE
         # Create a product service folder under compiled directory
 

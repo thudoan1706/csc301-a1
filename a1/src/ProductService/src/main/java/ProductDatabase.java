@@ -42,7 +42,7 @@ public class ProductDatabase {
         throw new ProductNotFoundException("Cannot find product with id: " + id);
     }
 
-    public void createProduct(Map<String, String> requestBodyMap) {
+    public Product createProduct(Map<String, String> requestBodyMap) {
         if (!requestBodyMap.containsKey("id") ||
                 !requestBodyMap.containsKey("name") ||
                 !requestBodyMap.containsKey("description") ||
@@ -64,6 +64,7 @@ public class ProductDatabase {
             Product product = new Product(id, name, description, price, quantity);
             products.add(product);
             updateDatabase();
+            return product;
         } else {
             throw new DuplicateIdException("A product with the provided ID already exists");
         }
@@ -72,17 +73,19 @@ public class ProductDatabase {
     public void deleteProduct(Map<String, String> requestBodyMap) {
         int id = Integer.parseInt(requestBodyMap.get("id"));
         String name = requestBodyMap.get("name");
+        String description = requestBodyMap.get("description");
         float price = Float.parseFloat(requestBodyMap.get("price"));
         int quantity = Integer.parseInt(requestBodyMap.get("quantity"));
 
         products.removeIf(currProduct -> currProduct.getId() == id &&
                 currProduct.getName().equals(name) &&
+                currProduct.getDescription().equals(description) &&
                 currProduct.getPrice() == price &&
                 currProduct.getQuantity() == quantity);
         updateDatabase();
     }
 
-    public void updateProduct(Map<String, String> requestBodyMap) {
+    public Product updateProduct(Map<String, String> requestBodyMap) {
         int id = Integer.parseInt(requestBodyMap.get("id"));
 
         for (Product product : products) {
@@ -104,8 +107,12 @@ public class ProductDatabase {
                     product.setQuantity(quantity);
                 }
                 updateDatabase();
+
+                return product;
             }
         }
+
+        throw new ProductNotFoundException("Cannot find product with id: " + id);
     }
 
     private List<Product> retrieveDatabase() {

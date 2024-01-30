@@ -91,14 +91,15 @@ public class ProductService {
             try {
                 if ("POST".equals(exchange.getRequestMethod())) {
                     Map<String, String> requestBodyMap = getRequestBody(exchange);
+                    ObjectMapper objectMapper = new ObjectMapper();
                     String command = requestBodyMap.get("command");
                     String response;
 
                     switch (command) {
                         case "create":
                             try {
-                                productDatabase.createProduct(requestBodyMap);
-                                response = "ProductService: Received create POST req for /product";
+                                Product product = productDatabase.createProduct(requestBodyMap);
+                                response = objectMapper.writeValueAsString(product);
                                 ResponseHandler.sendResponse(exchange, response, 200);
                                 return;
                             } catch (MissingRequiredFieldsException e) {
@@ -116,14 +117,14 @@ public class ProductService {
                             }
 
                         case "update":
-                            response = "ProductRequestHandler: received update POST req for /product";
+                            Product product = productDatabase.updateProduct(requestBodyMap);
                             productDatabase.updateProduct(requestBodyMap);
+                            response = objectMapper.writeValueAsString(product);
                             ResponseHandler.sendResponse(exchange, response, 200);
                             break;
                         case "delete":
-                            response = "ProductRequestHandler: received delete POST req for /product";
                             productDatabase.deleteProduct(requestBodyMap);
-                            ResponseHandler.sendResponse(exchange, response, 200);
+                            ResponseHandler.sendResponse(exchange, "", 200);
                             break;
                         default:
                             throw new InvalidPostCommand("Received invalid POST command: " + command);
