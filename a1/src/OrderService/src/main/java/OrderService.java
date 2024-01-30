@@ -42,19 +42,35 @@ public class OrderService {
         public void handle(HttpExchange exchange) throws IOException {
             if ("POST".equals(exchange.getRequestMethod())) {
                 Map<String, String> requestBodyMap = getRequestBody(exchange);
+                ObjectMapper objectMapper = new ObjectMapper();
+                Order order;
+                String response;
+                
+                // Check for all required fields
+                if (!requestBodyMap.containsKey("command") ||
+                    !requestBodyMap.containsKey("product_id") ||
+                    !requestBodyMap.containsKey("user_id") ||
+                    !requestBodyMap.containsKey("quantity")) {
+                        order = new Order(0, 0, 0, "Invalid Request");
+                        response = objectMapper.writeValueAsString(order);
+                        ResponseHandler.sendResponse(exchange, response, 400);
+                    }
+                
+                
                 String command = requestBodyMap.get("command");
-
                 if (command.equals("place order")) {
-                    Order order = new Order(Integer.parseInt(requestBodyMap.get("user_id")),
+                    order = new Order(Integer.parseInt(requestBodyMap.get("user_id")),
                             Integer.parseInt(requestBodyMap.get("product_id")),
                             Integer.parseInt(requestBodyMap.get("quantity")),
                             "Success");
 
                     // Check if user exists
-                    // if (!checkUserExists(order.getUser_id())) {
-                    //     ResponseHandler.sendResponse(exchange, "Invalid Request: user doesn't exist", 400);
-                    //     return;
-                    // }
+                    if (!checkUserExists(order.getUser_id())) {
+                        order.setStatus("Invalid Request");
+                        response = objectMapper.writeValueAsString(order);
+                        ResponseHandler.sendResponse(exchange, response, 400);
+                        return;
+                    }
 
                     // Check if product exists
                     Map<String, String> productMap = getProductMap(order.getProduct_id());
@@ -62,7 +78,9 @@ public class OrderService {
                     // Check if quanitity is sufficient
                     int productQuantity = Integer.parseInt(productMap.get("quantity"));
                     if (productQuantity - order.getQuantity() < 0) {
-                        ResponseHandler.sendResponse(exchange, "Invalid Request: not enough stock", 400);
+                        order.setStatus("Exceeded quantity limit");
+                        response = objectMapper.writeValueAsString(order);
+                        ResponseHandler.sendResponse(exchange, response, 400);
                         return;
                     }
 
@@ -71,10 +89,8 @@ public class OrderService {
                     updateProduct(productMap);
 
                     // Send back a JSON object representing the filled order
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    String response = objectMapper.writeValueAsString(order);
+                    response = objectMapper.writeValueAsString(order);
                     ResponseHandler.sendResponse(exchange, response, 200);
-
                 }
 
             } else {
@@ -98,7 +114,7 @@ public class OrderService {
                     .build();
 
             try {
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                client.send(request, HttpResponse.BodyHandlers.ofString());
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (InterruptedException e) {
@@ -118,11 +134,11 @@ public class OrderService {
 
             try {
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                ObjectMapper objectMapper = new ObjectMapper();
-                Map<String, String> userMap = objectMapper.readValue(response.body(),
-                        new TypeReference<HashMap<String, String>>() {
-                        });
-                return userMap.containsKey("id");
+                if (response.statusCode() == 200) {
+                    return true;
+                } else {
+                    return false;
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (InterruptedException e) {
