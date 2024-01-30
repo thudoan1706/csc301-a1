@@ -17,7 +17,7 @@ import exceptions.ProductSerializationException;
 
 public class ProductDatabase {
 
-    private static final String pathname = "./productDB.json";
+    private static final String pathname = "./data/product.json";
     private static List<Product> products;
 
     public ProductDatabase() {
