@@ -92,8 +92,13 @@ public class ProductService {
                 if ("POST".equals(exchange.getRequestMethod())) {
                     Map<String, String> requestBodyMap = getRequestBody(exchange);
                     ObjectMapper objectMapper = new ObjectMapper();
-                    String command = requestBodyMap.get("command");
                     String response;
+
+                    if (!requestBodyMap.containsKey("command") || !requestBodyMap.containsKey("id")) {
+                        ResponseHandler.sendResponse(exchange, "Received invalid POST request", 400);
+                        return;
+                    }
+                    String command = requestBodyMap.get("command");
 
                     switch (command) {
                         case "create":
@@ -117,17 +122,27 @@ public class ProductService {
                             }
 
                         case "update":
-                            Product product = productDatabase.updateProduct(requestBodyMap);
-                            productDatabase.updateProduct(requestBodyMap);
-                            response = objectMapper.writeValueAsString(product);
-                            ResponseHandler.sendResponse(exchange, response, 200);
-                            break;
+                            try {
+                                Product product = productDatabase.updateProduct(requestBodyMap);
+                                response = objectMapper.writeValueAsString(product);
+                                ResponseHandler.sendResponse(exchange, response, 200);
+                                return;
+                            } catch (ProductNotFoundException e) {
+                                ResponseHandler.sendResponse(exchange, e.getMessage(), 400);
+                                return;
+                            }
+
                         case "delete":
-                            productDatabase.deleteProduct(requestBodyMap);
-                            ResponseHandler.sendResponse(exchange, "", 200);
-                            break;
+                            try {
+                                productDatabase.deleteProduct(requestBodyMap);
+                                ResponseHandler.sendResponse(exchange, "", 200);
+                                return;
+                            } catch (ProductNotFoundException e) {
+                                ResponseHandler.sendResponse(exchange, e.getMessage(), 400);
+                                return;
+                            }
                         default:
-                            throw new InvalidPostCommand("Received invalid POST command: " + command);
+                            ResponseHandler.sendResponse(exchange, "Received invalid POST command: " + command, 400);
                     }
                 } else if ("GET".equals(exchange.getRequestMethod())) {
                     String requestURI = exchange.getRequestURI().toString();

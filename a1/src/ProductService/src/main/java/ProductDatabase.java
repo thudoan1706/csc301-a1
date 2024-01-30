@@ -77,12 +77,17 @@ public class ProductDatabase {
         float price = Float.parseFloat(requestBodyMap.get("price"));
         int quantity = Integer.parseInt(requestBodyMap.get("quantity"));
 
-        products.removeIf(currProduct -> currProduct.getId() == id &&
+        boolean productRemoved = products.removeIf(currProduct -> currProduct.getId() == id &&
                 currProduct.getName().equals(name) &&
                 currProduct.getDescription().equals(description) &&
                 currProduct.getPrice() == price &&
                 currProduct.getQuantity() == quantity);
-        updateDatabase();
+
+        if (productRemoved) {
+            updateDatabase();
+        } else {
+            throw new ProductNotFoundException("No matching product was found to delete");
+        }  
     }
 
     public Product updateProduct(Map<String, String> requestBodyMap) {
