@@ -13,7 +13,7 @@ public class UserServer {
         // server.setExecutor(null); // creates a default executor
         server.setExecutor(httpThreadPool); // Adjust the pool size as needed
         // Set up context for /user POST request
-        server.createContext("/user", new PostUserServiceHandler(server, httpThreadPool));
+        server.createContext("/user", new UserRequestHandler(server, httpThreadPool));
         
         server.start();
 
