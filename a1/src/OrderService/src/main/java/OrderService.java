@@ -3,8 +3,10 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -21,19 +23,56 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class OrderService {
     public static void main(String[] args) throws IOException {
-        int port = 8084;
-        HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-        server.setExecutor(Executors.newFixedThreadPool(5));
+        try {
+            if (args.length > 0) {
+                File file = new File(args[0]);
+                ObjectMapper objectMapper = new ObjectMapper();
+                Map<String, Map<String, String>> serviceEndpoints = objectMapper.readValue(
+                        file, new TypeReference<HashMap<String, Map<String, String>>>() {
+                        });
 
-        // Set context for /order req
-        server.createContext("/order", new OrderRequestHandler());
+                Map<String, String> orderEndpoint = serviceEndpoints.get("OrderService");
+                String port = orderEndpoint.get("port");
+                String ip = orderEndpoint.get("ip");
 
-        // Creates a default executor
-        server.setExecutor(null);
+                InetAddress localAddress = InetAddress.getByName(ip);
+                HttpServer server = HttpServer.create(new InetSocketAddress(localAddress, Integer.parseInt(port)), 0);
+                server.setExecutor(Executors.newFixedThreadPool(5));
 
-        // Starts a server on the specified port
-        server.start();
-        System.out.println("Server started on port " + port);
+                // Set context for /order req
+                server.createContext("/order", new OrderRequestHandler());
+
+                // Creates a default executor
+                server.setExecutor(null);
+
+                // Starts a server on the specified port
+                server.start();
+                System.out.println("Server started on port " + port);
+
+            } else {
+                System.out.println("Usage: java OrderService <config_file>");
+                // Use default port if not provided
+                String port = "8083";
+                String ip = "127.0.0.1";
+
+                InetAddress localAddress = InetAddress.getByName(ip);
+                HttpServer server = HttpServer.create(new InetSocketAddress(localAddress, Integer.parseInt(port)), 0);
+                server.setExecutor(Executors.newFixedThreadPool(5));
+
+                // Set context for /order req
+                server.createContext("/order", new OrderRequestHandler());
+
+                // Creates a default executor
+                server.setExecutor(null);
+
+                // Starts a server on the specified port
+                server.start();
+                System.out.println("Server started on port " + port);
+            }
+        } catch (IOException e) {
+            // Handle the exception appropriately
+            e.printStackTrace(); // Print the stack trace or log the exception
+        }
     }
 
     static class OrderRequestHandler implements HttpHandler {
