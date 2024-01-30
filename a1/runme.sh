@@ -1,19 +1,29 @@
 #!/bin/bash
 # Make all .sh scripts executable
-find . -type f -name "*.sh" -exec chmod +x {} \;
 
+# -------- Setup folder-------------
+mkdir -p "./compiled"
+cp -r "./lib" ./compiled
+# User Services
+mkdir -p "$compiled_dir/UserService"
+cp "user.sh" "$compiled_dir/UserService"
+cp "config.json" "$compiled_dir/UserService"
+
+
+# -------- Set Folder Variable-------------
 # Find the 'compiled' directory within any subdirectory
 compiled_dir=$(find . -type d -name "compiled")
-
-
 userSrcFile=./src/UserService/src/main/java/
-
 jar_lib=$compiled_dir/lib/
+find . -type f -name "*.sh" -exec chmod +x {} \;
 
 
 while getopts ":uc" opt; do
   case $opt in
-    u)  #USER SERVICE
+    c)  
+        #USER SERVICE
+        # Create a user service folder under compiled directory
+
         data=$compiled_dir/UserService/data
 
         # Create the bin directory if it doesn't exist
@@ -28,12 +38,12 @@ while getopts ":uc" opt; do
     
         #TODO OTHER SERVICES
     
-    c)
+    u)
         us_dir="$compiled_dir/UserService"
 
         if [ -n "$us_dir" ]; then
             cd "$us_dir"
-            ./runme.sh
+            ./user.sh
         else
             echo "Error: 'compiled/UserService' directory not found." >&2
             exit 1

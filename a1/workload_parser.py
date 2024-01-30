@@ -1,12 +1,24 @@
 from http_handler import HttpHandler
 import sys
+import json
+
         
 class WorkloadParser:
+    JSON_PATH = "./OrderService/config.json"
         
     def __init__(self, file_path: str):
         self.file_path = file_path
 
-
+    def config_client_address(self, json_path=JSON_PATH):
+        try:
+            with open(json_path, 'r') as file:
+                json.load(file)
+            return True
+        except (json.JSONDecodeError, FileNotFoundError) as e:
+            # JSONDecodeError: Raised if the file doesn't contain valid JSON data
+            # FileNotFoundError: Raised if the file does not exist
+            return False
+        
     def parse_workload(self):
         try:
             with open(self.file_path, 'r') as workload_file:

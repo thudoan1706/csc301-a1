@@ -51,10 +51,11 @@ public class UserServer {
             if (args.length > 0) {
                 File file = new File(args[0]);
                 ObjectMapper objectMapper = new ObjectMapper();
-                Map<String, Map<String, String>> serviceEndpoint = objectMapper.readValue(
-                        file, new TypeReference<HashMap<String, String>>() {}
+                Map<String, Map<String, String>> serviceEndpoints = objectMapper.readValue(
+                    file, new TypeReference<HashMap<String, Map<String, String>>>() {}
                 );
-                Map<String, String> userEndpoint = serviceEndpoint.get("UserService");
+
+                Map<String, String> userEndpoint = serviceEndpoints.get("UserService");
                 String port = userEndpoint.get("port");
                 String ip = userEndpoint.get("ip");
                 UserServer us = new UserServer(port, ip); // Adjust the thread pool size as needed
