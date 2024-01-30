@@ -119,7 +119,6 @@ public class ProductService {
                 while ((line = br.readLine()) != null) {
                     requestBody.append(line);
                 }
-
                 ObjectMapper objectMapper = new ObjectMapper();
                 return objectMapper.readValue(requestBody.toString(), new TypeReference<HashMap<String, String>>() {});
             }

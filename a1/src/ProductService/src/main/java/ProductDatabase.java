@@ -44,7 +44,7 @@ public class ProductDatabase {
 
     public void createProduct(Map<String, String> requestBodyMap) {
         if (!requestBodyMap.containsKey("id") ||
-                !requestBodyMap.containsKey("productname") ||
+                !requestBodyMap.containsKey("name") ||
                 !requestBodyMap.containsKey("description") ||
                 !requestBodyMap.containsKey("price") ||
                 !requestBodyMap.containsKey("quantity")) {
@@ -52,7 +52,7 @@ public class ProductDatabase {
         }
 
         int id = Integer.parseInt(requestBodyMap.get("id"));
-        String productname = requestBodyMap.get("productname");
+        String name = requestBodyMap.get("name");
         String description = requestBodyMap.get("description");
         float price = Float.parseFloat(requestBodyMap.get("price"));
         int quantity = Integer.parseInt(requestBodyMap.get("quantity"));
@@ -61,7 +61,7 @@ public class ProductDatabase {
         if (quantity < 0) { throw new NegativeQuantityException("Product quantity cannot be negative"); }
 
         if (!productExists(id)) {
-            Product product = new Product(id, productname, description, price, quantity);
+            Product product = new Product(id, name, description, price, quantity);
             products.add(product);
             updateDatabase();
         } else {
@@ -71,12 +71,12 @@ public class ProductDatabase {
 
     public void deleteProduct(Map<String, String> requestBodyMap) {
         int id = Integer.parseInt(requestBodyMap.get("id"));
-        String productname = requestBodyMap.get("productname");
+        String name = requestBodyMap.get("name");
         float price = Float.parseFloat(requestBodyMap.get("price"));
         int quantity = Integer.parseInt(requestBodyMap.get("quantity"));
 
         products.removeIf(currProduct -> currProduct.getId() == id &&
-                currProduct.getProductname().equals(productname) &&
+                currProduct.getName().equals(name) &&
                 currProduct.getPrice() == price &&
                 currProduct.getQuantity() == quantity);
         updateDatabase();
@@ -87,9 +87,9 @@ public class ProductDatabase {
 
         for (Product product : products) {
             if (product.getId() == id) {
-                if (requestBodyMap.containsKey("productname")) {
-                    String productname = requestBodyMap.get("productname");
-                    product.setProductname(productname);
+                if (requestBodyMap.containsKey("name")) {
+                    String name = requestBodyMap.get("name");
+                    product.setName(name);
                 }
                 if (requestBodyMap.containsKey("description")) {
                     String description = requestBodyMap.get("description");
