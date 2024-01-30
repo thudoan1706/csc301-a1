@@ -45,12 +45,9 @@ while getopts ":ucpow" opt; do
         javac -d "$us_bin" -cp "$jar_lib/*" "$userSrcFile"/*.java
 
         #PRODUCT SERVICE
-        # Create a product service folder under compiled directory
-
         # Create the bin directory if it doesn't exist
         ps_bin=$compiled_dir/ProductService/bin
         mkdir -p "$ps_bin"
-
 
         # Create the data directory if it doesn't exist
         data=$compiled_dir/ProductService/data
@@ -60,8 +57,6 @@ while getopts ":ucpow" opt; do
         javac -d "$ps_bin" -cp "$jar_lib/*" "$productSrcFile"/exceptions/*.java "$productSrcFile"/*.java
 
         #ORDER SERVICE
-        # Create a order service folder under compiled directory
-
         # Create the bin directory if it doesn't exist
         os_bin=$compiled_dir/OrderService/bin
         mkdir -p "$os_bin"
@@ -96,8 +91,8 @@ while getopts ":ucpow" opt; do
             echo "Error: 'compiled/OrderService' directory not found." >&2
             exit 1
         fi
-        ;;    
-    
+        ;;
+        
     u)
         us_dir="$compiled_dir/UserService"
 
