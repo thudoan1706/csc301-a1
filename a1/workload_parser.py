@@ -4,29 +4,35 @@ import json
 
         
 class WorkloadParser:
-    JSON_PATH = "./OrderService/config.json"
+    JSON_PATH = "./config.json"
         
     def __init__(self, file_path: str):
         self.file_path = file_path
+        self.client_address = self.config_client_address()
 
     def config_client_address(self, json_path=JSON_PATH):
         try:
             with open(json_path, 'r') as file:
-                json.load(file)
-            return True
+                endpoints = json.load(file)
+                order_endpoint = endpoints["OrderService"]
+                ip = order_endpoint.get("ip")
+                port = str(order_endpoint.get("port"))
+                address = f"{ip}:{port}"
+                print(address)
+                return address
         except (json.JSONDecodeError, FileNotFoundError) as e:
             # JSONDecodeError: Raised if the file doesn't contain valid JSON data
             # FileNotFoundError: Raised if the file does not exist
-            return False
+            return None
         
     def parse_workload(self):
         try:
             with open(self.file_path, 'r') as workload_file:
                 for line in workload_file:
                     payload=self.process_payload(line.strip())
-                    client = HttpHandler(base_url='http://127.0.0.1:8081')
+                    client = HttpHandler(base_url=self.client_address)
                     # client.make_get_request(endpoint="user/4")
-                    client.make_post_request(endpoint="user", data=payload)
+                    client.make_post_request(endpoint="order", data=payload)
                             
         except FileNotFoundError:
             print(f"File not found: {self.file_path}")

@@ -22,8 +22,6 @@ while getopts ":uc" opt; do
   case $opt in
     c)  
         #USER SERVICE
-        # Create a user service folder under compiled directory
-
         data=$compiled_dir/UserService/data
 
         # Create the bin directory if it doesn't exist
@@ -34,7 +32,7 @@ while getopts ":uc" opt; do
         mkdir -p "$data"
 
         # Compile User Services
-        javac -d "$us_bin" -cp "$jar_lib/jackson-annotations-2.7.9.jar:$jar_lib/jackson-core-2.7.9.jar:$jar_lib/jackson-databind-2.7.9.jar" "$userSrcFile"/*.java;;
+        javac -d "$us_bin" -cp "$jar_lib/*" "$userSrcFile"/*.java;;
     
         #TODO OTHER SERVICES
     
