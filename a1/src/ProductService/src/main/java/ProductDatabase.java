@@ -1,9 +1,13 @@
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +21,8 @@ import exceptions.ProductSerializationException;
 
 public class ProductDatabase {
 
-    private static final String pathname = "./data/product.json";
+    private static final String JSON_FILE_PATH = "./data/user.json";
+    private static final String BACKUP_FILE_PATH = "./data/backup.json";
     private static List<Product> products;
 
     public ProductDatabase() {
@@ -57,8 +62,12 @@ public class ProductDatabase {
         float price = Float.parseFloat(requestBodyMap.get("price"));
         int quantity = Integer.parseInt(requestBodyMap.get("quantity"));
 
-        if (price < 0) { throw new NegativePriceException("Product price cannot be negative"); }
-        if (quantity < 0) { throw new NegativeQuantityException("Product quantity cannot be negative"); }
+        if (price < 0) {
+            throw new NegativePriceException("Product price cannot be negative");
+        }
+        if (quantity < 0) {
+            throw new NegativeQuantityException("Product quantity cannot be negative");
+        }
 
         if (!productExists(id)) {
             Product product = new Product(id, name, description, price, quantity);
@@ -87,7 +96,7 @@ public class ProductDatabase {
             updateDatabase();
         } else {
             throw new ProductNotFoundException("No matching product was found to delete");
-        }  
+        }
     }
 
     public Product updateProduct(Map<String, String> requestBodyMap) {
@@ -121,7 +130,7 @@ public class ProductDatabase {
     }
 
     private List<Product> retrieveDatabase() {
-        File file = new File(pathname);
+        File file = new File(JSON_FILE_PATH);
 
         if (!file.exists()) {
             return new ArrayList<>();
@@ -140,7 +149,7 @@ public class ProductDatabase {
     private void updateDatabase() {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new File(pathname), products);
+            objectMapper.writeValue(new File(JSON_FILE_PATH), products);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -153,5 +162,71 @@ public class ProductDatabase {
             }
         }
         return false;
+    }
+
+    public boolean persistDataForBackUp() throws IOException {
+        try {
+            // Write the updated list to the JSON file
+            ObjectMapper objectMapper = new ObjectMapper();
+            ObjectWriter objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
+            // Convert the list of users to a pretty-printed JSON string
+            String prettyJson = objectWriter.writeValueAsString(products);
+
+            // Write the JSON string to the file
+            Files.write(Paths.get(BACKUP_FILE_PATH), prettyJson.getBytes(), StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace(); // Handle the exception appropriately
+            return false;
+        }
+    }
+
+    public void removeOriginalStoredDataFile() {
+        // Write the updated list to the JSON file
+        File file = new File(JSON_FILE_PATH);
+
+        // Use delete method to delete the file
+        if (file.delete()) {
+            System.out.println("File deleted successfully.");
+        } else {
+            System.out.println("Failed to delete the file.");
+        }
+    }
+
+    public void removeOBackUpStoredDataFile() {
+        // Write the updated list to the JSON file
+        File file = new File(BACKUP_FILE_PATH);
+
+        // Use delete method to delete the file
+        if (file.delete()) {
+            System.out.println("File deleted successfully.");
+        } else {
+            System.out.println("Failed to delete the file.");
+        }
+    }
+
+    public void restoreDataToOriginalFile() throws IOException {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            File backupFile = new File(BACKUP_FILE_PATH);
+
+            if (backupFile.exists()) {
+                // Read data from the backup file
+                List<Product> restoredProducts = objectMapper.readValue(backupFile, new TypeReference<List<Product>>() {});
+
+                // Perform any additional processing or validation if needed
+
+                // Write the restored data back to the original file
+                String prettyJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(restoredProducts);
+                Files.write(Paths.get(JSON_FILE_PATH), prettyJson.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            } else {
+                // Handle the case when the backup file doesn't exist
+                System.out.println("Backup file does not exist.");
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace(); // Handle the exception appropriately
+        }
     }
 }

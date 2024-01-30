@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -25,6 +26,8 @@ import exceptions.NegativeQuantityException;
 import exceptions.ProductNotFoundException;
 
 public class ProductService {
+    final static int threadPoolSize = 20;
+
     public static void main(String[] args) throws IOException {
         try {
             if (args.length > 0) {
@@ -40,10 +43,11 @@ public class ProductService {
 
                 InetAddress localAddress = InetAddress.getByName(ip);
                 HttpServer server = HttpServer.create(new InetSocketAddress(localAddress, Integer.parseInt(port)), 0);
-                server.setExecutor(Executors.newFixedThreadPool(5));
+                ExecutorService httpThreadPool = Executors.newFixedThreadPool(threadPoolSize);
+                server.setExecutor(httpThreadPool);
 
                 // Set context for /product req
-                server.createContext("/product", new ProductRequestHandler());
+                server.createContext("/product", new ProductRequestHandler(server, httpThreadPool));
 
                 // Creates a default executor
                 server.setExecutor(null);
@@ -60,10 +64,11 @@ public class ProductService {
 
                 InetAddress localAddress = InetAddress.getByName(ip);
                 HttpServer server = HttpServer.create(new InetSocketAddress(localAddress, Integer.parseInt(port)), 0);
-                server.setExecutor(Executors.newFixedThreadPool(5));
+                ExecutorService httpThreadPool = Executors.newFixedThreadPool(threadPoolSize);
+                server.setExecutor(httpThreadPool);
 
                 // Set context for /product req
-                server.createContext("/product", new ProductRequestHandler());
+                server.createContext("/product", new ProductRequestHandler(server, httpThreadPool));
 
                 // Creates a default executor
                 server.setExecutor(null);
@@ -80,10 +85,13 @@ public class ProductService {
 
     static class ProductRequestHandler implements HttpHandler {
         ProductDatabase productDatabase;
+        HttpServer server;
+        ExecutorService threadPool;
 
-        public ProductRequestHandler() {
-            // Create product database instance
+        public ProductRequestHandler(HttpServer server, ExecutorService threadPool) {
             this.productDatabase = new ProductDatabase();
+            this.server = server;
+            this.threadPool = threadPool;
         }
 
         @Override
@@ -94,7 +102,7 @@ public class ProductService {
                     ObjectMapper objectMapper = new ObjectMapper();
                     String response;
 
-                    if (!requestBodyMap.containsKey("command") || !requestBodyMap.containsKey("id")) {
+                    if (!requestBodyMap.containsKey("command")) {
                         ResponseHandler.sendResponse(exchange, "Received invalid POST request", 400);
                         return;
                     }
@@ -141,6 +149,32 @@ public class ProductService {
                                 ResponseHandler.sendResponse(exchange, e.getMessage(), 400);
                                 return;
                             }
+
+                        case "shutdown":
+                            try {
+                                productDatabase.persistDataForBackUp();
+                                productDatabase.removeOriginalStoredDataFile();
+                                server.stop(3);
+                                threadPool.shutdownNow();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                String errorMessage = "Failed to store data for backup after shutdown";
+                                System.out.println(errorMessage);
+                            }
+                            break;
+
+                        case "restart":
+                            try {
+                                productDatabase.restoreDataToOriginalFile();
+                                productDatabase.removeOBackUpStoredDataFile();
+                                exchange.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                String errorMessage = "Failed to restore data from backup";
+                                System.out.println(errorMessage);
+                            }
+                            break;
+
                         default:
                             ResponseHandler.sendResponse(exchange, "Received invalid POST command: " + command, 400);
                     }
