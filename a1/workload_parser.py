@@ -82,7 +82,7 @@ class WorkloadParser:
             payload = self.parse_order_payload(line_tokens[1:])
             payload["endpoint"] = "order"
             payload["service"] = "OrderService"
-            payload["command"]="place"
+            payload["command"]="place order"
         elif service == 'shutdown':
             payload = {'command': 'shutdown'}
         elif service == 'restart':
