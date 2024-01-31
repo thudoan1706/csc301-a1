@@ -16,12 +16,15 @@ import java.nio.charset.StandardCharsets;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class OrderService {
+    final static int threadPoolSize = 20;
+
     public static void main(String[] args) throws IOException {
         try {
             if (args.length > 0) {
@@ -37,10 +40,11 @@ public class OrderService {
 
                 InetAddress localAddress = InetAddress.getByName(ip);
                 HttpServer server = HttpServer.create(new InetSocketAddress(localAddress, Integer.parseInt(port)), 0);
-                server.setExecutor(Executors.newFixedThreadPool(5));
+                ExecutorService httpThreadPool = Executors.newFixedThreadPool(threadPoolSize);
+                server.setExecutor(httpThreadPool);
 
                 // Set context for /order req
-                server.createContext("/order", new OrderRequestHandler());
+                server.createContext("/order", new OrderRequestHandler(server, httpThreadPool));
 
                 // Creates a default executor
                 server.setExecutor(null);
@@ -57,10 +61,11 @@ public class OrderService {
 
                 InetAddress localAddress = InetAddress.getByName(ip);
                 HttpServer server = HttpServer.create(new InetSocketAddress(localAddress, Integer.parseInt(port)), 0);
-                server.setExecutor(Executors.newFixedThreadPool(5));
+                ExecutorService httpThreadPool = Executors.newFixedThreadPool(threadPoolSize);
+                server.setExecutor(httpThreadPool);
 
                 // Set context for /order req
-                server.createContext("/order", new OrderRequestHandler());
+                server.createContext("/order", new OrderRequestHandler(server, httpThreadPool));
 
                 // Creates a default executor
                 server.setExecutor(null);
@@ -76,6 +81,13 @@ public class OrderService {
     }
 
     static class OrderRequestHandler implements HttpHandler {
+        HttpServer server;
+        ExecutorService threadPool;
+
+        public OrderRequestHandler(HttpServer server, ExecutorService threadPool) {
+            this.server = server;
+            this.threadPool = threadPool;
+        }
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -84,54 +96,70 @@ public class OrderService {
                 ObjectMapper objectMapper = new ObjectMapper();
                 Order order;
                 String response;
-                
-                // Check for all required fields
-                if (!requestBodyMap.containsKey("command") ||
-                    !requestBodyMap.containsKey("product_id") ||
-                    !requestBodyMap.containsKey("user_id") ||
-                    !requestBodyMap.containsKey("quantity")) {
-                        order = new Order(0, 0, 0, "Invalid Request");
-                        response = objectMapper.writeValueAsString(order);
-                        ResponseHandler.sendResponse(exchange, response, 400);
-                    }
-                
-                
+
                 String command = requestBodyMap.get("command");
-                if (command.equals("place order")) {
-                    order = new Order(Integer.parseInt(requestBodyMap.get("user_id")),
-                            Integer.parseInt(requestBodyMap.get("product_id")),
-                            Integer.parseInt(requestBodyMap.get("quantity")),
-                            "Success");
+                switch (command) {
+                    case "place order":
+                        // Check for all required fields
+                        if (!requestBodyMap.containsKey("command") ||
+                                !requestBodyMap.containsKey("product_id") ||
+                                !requestBodyMap.containsKey("user_id") ||
+                                !requestBodyMap.containsKey("quantity")) {
+                            order = new Order(0, 0, 0, "Invalid Request");
+                            response = objectMapper.writeValueAsString(order);
+                            ResponseHandler.sendResponse(exchange, response, 400);
+                        }
 
-                    // Check if user exists
-                    if (!checkUserExists(order.getUser_id())) {
-                        order.setStatus("Invalid Request");
+                        order = new Order(Integer.parseInt(requestBodyMap.get("user_id")),
+                                Integer.parseInt(requestBodyMap.get("product_id")),
+                                Integer.parseInt(requestBodyMap.get("quantity")),
+                                "Success");
+
+                        // Check if user exists
+                        if (!checkUserExists(order.getUser_id())) {
+                            order.setStatus("Invalid Request");
+                            response = objectMapper.writeValueAsString(order);
+                            ResponseHandler.sendResponse(exchange, response, 400);
+                            return;
+                        }
+
+                        // Check if product exists
+                        Map<String, String> productMap = getProductMap(order.getProduct_id());
+
+                        // Check if quanitity is sufficient
+                        int productQuantity = Integer.parseInt(productMap.get("quantity"));
+                        if (productQuantity - order.getQuantity() < 0) {
+                            order.setStatus("Exceeded quantity limit");
+                            response = objectMapper.writeValueAsString(order);
+                            ResponseHandler.sendResponse(exchange, response, 400);
+                            return;
+                        }
+
+                        // Update remaining stock after filling order
+                        productMap.put("quantity", Integer.toString(productQuantity - order.getQuantity()));
+                        updateProduct(productMap);
+
+                        // Send back a JSON object representing the filled order
                         response = objectMapper.writeValueAsString(order);
-                        ResponseHandler.sendResponse(exchange, response, 400);
-                        return;
-                    }
+                        ResponseHandler.sendResponse(exchange, response, 200);
 
-                    // Check if product exists
-                    Map<String, String> productMap = getProductMap(order.getProduct_id());
+                        break;
 
-                    // Check if quanitity is sufficient
-                    int productQuantity = Integer.parseInt(productMap.get("quantity"));
-                    if (productQuantity - order.getQuantity() < 0) {
-                        order.setStatus("Exceeded quantity limit");
-                        response = objectMapper.writeValueAsString(order);
-                        ResponseHandler.sendResponse(exchange, response, 400);
-                        return;
-                    }
+                    case "shutdown":
+                        server.stop(3);
+                        threadPool.shutdownNow();
+                        break;
 
-                    // Update remaining stock after filling order
-                    productMap.put("quantity", Integer.toString(productQuantity - order.getQuantity()));
-                    updateProduct(productMap);
+                    case "restart":
+                        exchange.close();
 
-                    // Send back a JSON object representing the filled order
-                    response = objectMapper.writeValueAsString(order);
-                    ResponseHandler.sendResponse(exchange, response, 200);
+                    default:
+                        ResponseHandler.sendResponse(exchange, "Received invalid POST command: " + command, 400);
                 }
 
+                if (command.equals("place order")) {
+
+                }
             } else {
                 // Send a 405 Method Not Allowed response for non-POST requests
                 exchange.sendResponseHeaders(405, 0);
