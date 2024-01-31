@@ -13,10 +13,10 @@ class HttpHandler:
         except requests.RequestException as e:
             print(f"Error making POST request: {e}")
 
-    def make_get_request(self, endpoint, params=None):
+    def make_get_request(self, endpoint, id):
         try:
-            url = f'{self.base_url}/{endpoint}'
-            response = requests.get(url, params=params, headers=self.headers)
+            url = f'{self.base_url}/{endpoint}/{id}'
+            response = requests.get(url, headers=self.headers)
 
             self.handle_response(response, 'GET')
         except requests.RequestException as e:
