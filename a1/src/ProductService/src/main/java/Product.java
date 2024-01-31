@@ -18,11 +18,19 @@ public class Product {
         this.quantity = quantity;
     }
 
+    
+    /** 
+     * @return int
+     */
     // Getters
     public int getId() {
         return id;
     }
 
+    
+    /** 
+     * @return float
+     */
     public float getPrice() {
         return price;
     }

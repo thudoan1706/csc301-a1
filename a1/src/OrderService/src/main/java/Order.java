@@ -13,12 +13,20 @@ public class Order {
         this.status = status;
     }
 
+    
+    /** 
+     * @return int
+     */
     // Getters
 
     public int getUser_id() {
         return user_id;
     }
 
+    
+    /** 
+     * @return int
+     */
     public int getProduct_id() {
         return product_id;
     }

@@ -24,6 +24,11 @@ public class UserRequestHandler implements HttpHandler {
         db = new UserDatabaseManager();
     }
 
+    
+    /** 
+     * @param exchange
+     * @throws IOException
+     */
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         if ("POST".equals(exchange.getRequestMethod())) {
@@ -87,6 +92,15 @@ public class UserRequestHandler implements HttpHandler {
         }
     }
 
+    
+    /** 
+     * @param exchange
+     * @param id
+     * @param hasEmptyValue
+     * @param objectMapper
+     * @param stringMap
+     * @throws IOException
+     */
     private void handleCreate(HttpExchange exchange, int id, boolean hasEmptyValue, ObjectMapper objectMapper, Map<String, String> stringMap) throws IOException {
         String response;
         int statusCode;

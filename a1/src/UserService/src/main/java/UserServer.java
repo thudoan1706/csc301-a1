@@ -46,6 +46,10 @@ public class UserServer {
         System.out.println("User Server started on port " + server.getAddress().getPort());
     }
 
+    
+    /** 
+     * @param args
+     */
     public static void main(String[] args) {
         try {
             if (args.length > 0) {

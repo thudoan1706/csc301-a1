@@ -29,6 +29,11 @@ public class ProductDatabase {
         products = retrieveDatabase();
     }
 
+    
+    /** 
+     * @param requestURI
+     * @return String
+     */
     public String getProduct(String requestURI) {
         int lastIndex = requestURI.lastIndexOf("/");
         String idString = requestURI.substring(lastIndex + 1);
@@ -47,6 +52,11 @@ public class ProductDatabase {
         throw new ProductNotFoundException("Cannot find product with id: " + id);
     }
 
+    
+    /** 
+     * @param requestBodyMap
+     * @return Product
+     */
     public Product createProduct(Map<String, String> requestBodyMap) {
         if (!requestBodyMap.containsKey("id") ||
                 !requestBodyMap.containsKey("name") ||

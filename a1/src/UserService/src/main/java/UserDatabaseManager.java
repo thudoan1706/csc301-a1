@@ -19,6 +19,11 @@ public class UserDatabaseManager {
         existingUsers = getAllUsers();
     }
 
+    
+    /** 
+     * @param id
+     * @return Map<String, String>
+     */
     public Map<String, String> getUser(Integer id) {
         Map<String, String> responseBodyMap = new HashMap<>();
         User user = existingUsers.stream()
@@ -36,6 +41,13 @@ public class UserDatabaseManager {
     }
 
 
+    
+    /** 
+     * @param requestBodyMap
+     * @param id
+     * @return int
+     * @throws IOException
+     */
     public int updateExistingUser(Map<String, String> requestBodyMap, int id) throws IOException {
         try {
             boolean isPresent = isUserPresent(id);
