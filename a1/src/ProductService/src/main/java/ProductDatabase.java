@@ -66,7 +66,6 @@ public class ProductDatabase {
     }
 
     
-<<<<<<< HEAD
     /**
      * Creates a new product based on the provided request body map.
      *
@@ -76,11 +75,6 @@ public class ProductDatabase {
      * @throws NegativePriceException         If the product price is negative.
      * @throws NegativeQuantityException      If the product quantity is negative.
      * @throws DuplicateIdException           If a product with the provided ID already exists.
-=======
-    /** 
-     * @param requestBodyMap Payload for product request
-     * @return Product
->>>>>>> f48dc7a07eb59430cf8b4564b10b71ef5d9e6b0b
      */
     public Product createProduct(Map<String, String> requestBodyMap) {
         if (!requestBodyMap.containsKey("id") ||
