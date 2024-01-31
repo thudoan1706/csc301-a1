@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class OrderService {
     final static int threadPoolSize = 20;
-
     
     /** 
      * @param args
@@ -49,7 +48,7 @@ public class OrderService {
                 server.setExecutor(httpThreadPool);
 
                 // Set context for /order req
-                server.createContext("/order", new OrderRequestHandler(server, httpThreadPool));
+                server.createContext("/order", new OrderRequestHandler(server, httpThreadPool, serviceEndpoints));
 
                 // Creates a default executor
                 server.setExecutor(null);
@@ -60,24 +59,6 @@ public class OrderService {
 
             } else {
                 System.out.println("Usage: java OrderService <config_file>");
-                // Use default port if not provided
-                String port = "8083";
-                String ip = "127.0.0.1";
-
-                InetAddress localAddress = InetAddress.getByName(ip);
-                HttpServer server = HttpServer.create(new InetSocketAddress(localAddress, Integer.parseInt(port)), 0);
-                ExecutorService httpThreadPool = Executors.newFixedThreadPool(threadPoolSize);
-                server.setExecutor(httpThreadPool);
-
-                // Set context for /order req
-                server.createContext("/order", new OrderRequestHandler(server, httpThreadPool));
-
-                // Creates a default executor
-                server.setExecutor(null);
-
-                // Starts a server on the specified port
-                server.start();
-                System.out.println("Server started on port " + port);
             }
         } catch (IOException e) {
             // Handle the exception appropriately
@@ -88,10 +69,12 @@ public class OrderService {
     static class OrderRequestHandler implements HttpHandler {
         HttpServer server;
         ExecutorService threadPool;
+        Map<String, Map<String, String>> serviceEndpoints;
 
-        public OrderRequestHandler(HttpServer server, ExecutorService threadPool) {
+        public OrderRequestHandler(HttpServer server, ExecutorService threadPool, Map<String, Map<String, String>> serviceEndpoints) {
             this.server = server;
             this.threadPool = threadPool;
+            this.serviceEndpoints = serviceEndpoints;
         }
 
         @Override
@@ -122,7 +105,7 @@ public class OrderService {
 
                         // Check if user exists
                         if (!checkUserExists(order.getUser_id())) {
-                            order.setStatus("Invalid Request");
+                            order.setStatus("Invalid Request: user does not exist" + order.getUser_id());
                             response = objectMapper.writeValueAsString(order);
                             ResponseHandler.sendResponse(exchange, response, 400);
                             return;
@@ -172,8 +155,11 @@ public class OrderService {
             }
         }
 
-        private static void updateProduct(Map<String, String> productMap) {
-            String serviceURL = "http://localhost:8081/product";
+        private void updateProduct(Map<String, String> productMap) {
+            Map<String, String> productEndpoint = serviceEndpoints.get("ProductService");
+            String port = productEndpoint.get("port");
+            String ip = productEndpoint.get("ip");
+            String serviceURL = "http://" + ip + ":" + port + "/product";
             HttpClient client = HttpClient.newHttpClient();
 
             String body = "{\"command\":\"update\",\"id\":" + productMap.get("id") + ",\"quantity\":"
@@ -194,8 +180,11 @@ public class OrderService {
             }
         }
 
-        private static boolean checkUserExists(int userId) {
-            String serviceURL = "http://127.0.0.1:8083/user/" + Integer.toString(userId);
+        private boolean checkUserExists(int userId) {
+            Map<String, String> userEndpoint = serviceEndpoints.get("UserService");
+            String port = userEndpoint.get("port");
+            String ip = userEndpoint.get("ip");
+            String serviceURL = "http://" + ip + ":" + port + "/user/" + Integer.toString(userId);
             HttpClient client = HttpClient.newHttpClient();
 
             HttpRequest request = HttpRequest.newBuilder()
@@ -219,8 +208,11 @@ public class OrderService {
             return false;
         }
 
-        private static Map<String, String> getProductMap(int productId) {
-            String serviceURL = "http://127.0.0.1:8081/product/" + Integer.toString(productId);
+        private Map<String, String> getProductMap(int productId) {
+            Map<String, String> productEndpoint = serviceEndpoints.get("ProductService");
+            String port = productEndpoint.get("port");
+            String ip = productEndpoint.get("ip");
+            String serviceURL = "http://" + ip + ":" + port + "/product/" + Integer.toString(productId);
             HttpClient client = HttpClient.newHttpClient();
 
             HttpRequest request = HttpRequest.newBuilder()

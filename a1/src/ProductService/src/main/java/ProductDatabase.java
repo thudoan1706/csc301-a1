@@ -21,7 +21,7 @@ import exceptions.ProductSerializationException;
 
 public class ProductDatabase {
 
-    private static final String JSON_FILE_PATH = "./data/user.json";
+    private static final String JSON_FILE_PATH = "./data/product.json";
     private static final String BACKUP_FILE_PATH = "./data/backup.json";
     private static List<Product> products;
 
