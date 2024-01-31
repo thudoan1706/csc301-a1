@@ -8,15 +8,15 @@ class WorkloadParser:
         
     def __init__(self, file_path: str):
         self.file_path = file_path
-        self.client_address = self.config_client_address()
+        
 
-    def config_client_address(self, json_path=JSON_PATH):
+    def config_client_address(self, service, json_path=JSON_PATH):
         try:
             with open(json_path, 'r') as file:
                 endpoints = json.load(file)
-                order_endpoint = endpoints["OrderService"]
-                ip = order_endpoint.get("ip")
-                port = str(order_endpoint.get("port"))
+                service_endpoint = endpoints[service]
+                ip = service_endpoint.get("ip")
+                port = str(service_endpoint.get("port"))
                 address = f"http://{ip}:{port}"
                 print(address)
                 return address
@@ -29,29 +29,60 @@ class WorkloadParser:
         try:
             with open(self.file_path, 'r') as workload_file:
                 for line in workload_file:
+                    print("hello")
+
                     payload=self.process_payload(line.strip())
-                    client = HttpHandler(base_url=self.client_address)
-                    # client.make_get_request(endpoint="user/4")
-                    client.make_post_request(endpoint="user", data=payload)
-                            
+
+                    if not (payload["command"] in ["shutdown", "restart"]):
+                        client_address = self.config_client_address(payload["service"])
+                        client = HttpHandler(base_url=client_address)
+                        # client.make_get_request(endpoint="user/4")
+                        endpoint = payload["endpoint"]
+                        
+                        if "endpoint" in payload:
+                            del payload["endpoint"]
+                        if "service" in payload:
+                            del payload["service"]
+                        if payload["command"] in ["get", "info"]:
+                            client.make_get_request(endpoint=endpoint, id=payload["id"])
+                        else:
+                            client.make_post_request(endpoint=endpoint, data=payload)
+                    else:
+                        self.handle_shutdown_restart(payload)
+    
         except FileNotFoundError:
             print(f"File not found: {self.file_path}")
         except Exception as e:
             print(f"An error occurred: {e}")
+            
+    def handle_shutdown_restart(self, payload):
+        services = ["ProductService", "UserService", "OrderService"]
+        endpoints = ["product", "user", "order"]
+
+        for service, endpoint in zip(services, endpoints):
+            client_address = self.config_client_address(service)
+            client = HttpHandler(base_url=client_address)
+            client.make_post_request(endpoint=endpoint, data=payload)
 
     def process_payload(self, line: str):
         line_tokens = line.split()
         service = line_tokens[0].lower()
         if service == "user":
             payload = self.parse_user_payload(line_tokens[1:])
+            payload["endpoint"] = "user"
+            payload["service"] = "UserService"
             payload["command"]=line_tokens[1]
         elif service == "product":
             payload = self.parse_product_payload(line_tokens[1:])
+            payload["service"] = "ProductService"
+            payload["endpoint"] = "product"
             payload["command"]=line_tokens[1]
             print(payload)
         elif service == 'order':
             payload = self.parse_order_payload(line_tokens[1:])
-            payload["command"]=line_tokens[1]
+            payload["endpoint"] = "order"
+            payload["service"] = "OrderService"
+            payload["command"]="place"
         elif service == 'shutdown':
             payload = {'command': 'shutdown'}
         elif service == 'restart':
@@ -61,6 +92,13 @@ class WorkloadParser:
         return payload
 
     def parse_payload(self, line_tokens: list[str], keys_payload: list[str], token_prefix_mapping: dict) -> dict:
+        
+        if line_tokens[0] in ["get", "info"]:
+            query_params = {
+                "id": line_tokens[1]
+            }
+            print(query_params)
+            return query_params
         payload_tokens = [""] * len(keys_payload)
 
         for i, token in enumerate(line_tokens):
@@ -87,7 +125,7 @@ class WorkloadParser:
         return self.parse_payload(line_tokens, keys_payload, token_prefix_mapping)
 
     def parse_product_payload(self, line_tokens: list[str]) -> dict:
-        keys_payload = ["command", "id", "productname", "description", "price", "quantity"]
+        keys_payload = ["command", "id", "name", "description", "price", "quantity"]
         token_prefix_mapping = {
             "productname-": 2,
             "productname:": 2,

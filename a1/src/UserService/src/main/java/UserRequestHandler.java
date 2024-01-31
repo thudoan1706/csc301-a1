@@ -12,6 +12,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+
+/**
+ * The {@code UserRequestHandler} class implements the {@code HttpHandler} interface
+ * to handle HTTP requests related to user operations.
+ *
+ * <p>Instances of this class are typically associated with a specific HTTP server
+ * and are responsible for handling incoming HTTP requests related to user operations.
+ */
 public class UserRequestHandler implements HttpHandler {
 
     private final HttpServer server;
@@ -24,10 +32,12 @@ public class UserRequestHandler implements HttpHandler {
         db = new UserDatabaseManager();
     }
 
-    
-    /** 
-     * @param exchange
-     * @throws IOException
+        
+    /**
+     *Handles HTTP requests related to user operations.
+     *
+     * @param exchange The HttpExchange object representing the HTTP request and response.
+     * @throws IOException If an I/O error occurs while handling the HTTP request.
      */
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -93,14 +103,6 @@ public class UserRequestHandler implements HttpHandler {
     }
 
     
-    /** 
-     * @param exchange
-     * @param id
-     * @param hasEmptyValue
-     * @param objectMapper
-     * @param stringMap
-     * @throws IOException
-     */
     private void handleCreate(HttpExchange exchange, int id, boolean hasEmptyValue, ObjectMapper objectMapper, Map<String, String> stringMap) throws IOException {
         String response;
         int statusCode;
