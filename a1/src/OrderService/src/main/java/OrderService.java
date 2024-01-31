@@ -23,16 +23,19 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * The {@code OrderService} class represents the main entry point for the Order microservice.
- * It initializes an HTTP server based on the provided configuration and handles incoming order requests.
+ * The {@code OrderService} class represents the main entry point for the Order
+ * microservice.
+ * It initializes an HTTP server based on the provided configuration and handles
+ * incoming order requests.
  */
 public class OrderService {
     final static int threadPoolSize = 20;
-    
+
     /**
      * Main method to start the OrderService.
      *
-     * @param args command-line arguments (expects the path to the configuration file)
+     * @param args command-line arguments (expects the path to the configuration
+     *             file)
      * @throws IOException if an I/O error occurs
      */
     public static void main(String[] args) throws IOException {
@@ -73,8 +76,10 @@ public class OrderService {
     }
 
     /**
-     * The OrderRequestHandler class handles incoming HTTP requests for the "/order" endpoint.
-     * It processes POST requests to place orders and contains logic for order placement, shutdown, and restart commands.
+     * The OrderRequestHandler class handles incoming HTTP requests for the "/order"
+     * endpoint.
+     * It processes POST requests to place orders and contains logic for order
+     * placement, shutdown, and restart commands.
      */
     static class OrderRequestHandler implements HttpHandler {
         HttpServer server;
@@ -82,13 +87,15 @@ public class OrderService {
         Map<String, Map<String, String>> serviceEndpoints;
 
         /**
-         * Constructs a new OrderRequestHandler with the specified HTTP server, thread pool, and service endpoints.
+         * Constructs a new OrderRequestHandler with the specified HTTP server, thread
+         * pool, and service endpoints.
          *
          * @param server           the HTTP server
          * @param threadPool       the thread pool
          * @param serviceEndpoints the service endpoints configuration
          */
-        public OrderRequestHandler(HttpServer server, ExecutorService threadPool, Map<String, Map<String, String>> serviceEndpoints) {
+        public OrderRequestHandler(HttpServer server, ExecutorService threadPool,
+                Map<String, Map<String, String>> serviceEndpoints) {
             this.server = server;
             this.threadPool = threadPool;
             this.serviceEndpoints = serviceEndpoints;
@@ -97,7 +104,8 @@ public class OrderService {
         /**
          * Handles incoming HTTP requests for the "/order" endpoint.
          *
-         * @param exchange the HttpExchange object representing the HTTP request and response
+         * @param exchange the HttpExchange object representing the HTTP request and
+         *                 response
          * @throws IOException if an I/O error occurs
          */
         @Override
@@ -128,13 +136,19 @@ public class OrderService {
 
                         // Check if user exists
                         if (!checkUserExists(order.getUser_id())) {
-                            order.setStatus("Invalid Request: user does not exist" + order.getUser_id());
+                            order.setStatus("Invalid Request: user does not exist with id " + order.getUser_id());
                             response = objectMapper.writeValueAsString(order);
                             ResponseHandler.sendResponse(exchange, response, 400);
                             return;
                         }
 
                         // Check if product exists
+                        if (!checkProductExists(order.getProduct_id())) {
+                            order.setStatus("Invalid Request: product does not exist with id " + order.getProduct_id());
+                            response = objectMapper.writeValueAsString(order);
+                            ResponseHandler.sendResponse(exchange, response, 400);
+                            return;
+                        }
                         Map<String, String> productMap = getProductMap(order.getProduct_id());
 
                         // Check if quanitity is sufficient
@@ -231,6 +245,35 @@ public class OrderService {
             return false;
         }
 
+        private boolean checkProductExists(int productId) {
+            Map<String, String> productEndpoint = serviceEndpoints.get("ProductService");
+            String port = productEndpoint.get("port");
+            String ip = productEndpoint.get("ip");
+            String serviceURL = "http://" + ip + ":" + port + "/product/" + Integer.toString(productId);
+            HttpClient client = HttpClient.newHttpClient();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(serviceURL))
+                    .header("Content-Type", "application/json")
+                    .GET()
+                    .build();
+
+            try {
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() == 200) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+
         private Map<String, String> getProductMap(int productId) {
             Map<String, String> productEndpoint = serviceEndpoints.get("ProductService");
             String port = productEndpoint.get("port");
@@ -249,12 +292,12 @@ public class OrderService {
                 ObjectMapper objectMapper = new ObjectMapper();
                 return objectMapper.readValue(response.body(), new TypeReference<HashMap<String, String>>() {
                 });
+
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
             return null;
         }
 
