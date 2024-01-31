@@ -113,7 +113,7 @@ public class User {
     /**
      * Sets the username of the user.
      *
-     * @param username
+     * @param username Username of the user
      *           
      */
     public void setUsername(String username) {
@@ -123,7 +123,7 @@ public class User {
     /**
      * Sets the email of the user.
      *
-     * @param email
+     * @param email Email of the user
      *           
      */
     public void setEmail(String email) {
@@ -133,7 +133,7 @@ public class User {
     /**
      * Sets the password of the user.
      *
-     * @param password
+     * @param password : Password of the user
      *           
      */
     public void setPassword(String password) {

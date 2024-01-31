@@ -49,7 +49,7 @@ public class UserServer {
 
     
     /** 
-     * @param args
+     * @param args Input received from the system
      */
     public static void main(String[] args) {
         try {
