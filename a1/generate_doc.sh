@@ -1,8 +1,12 @@
-jar_lib="./lib"
-echo "$jar_lib"
+
 # Ensure Jackson JAR files are in the jar_lib directory
+classpath="./lib/*"
+order="./src/OrderService/src/main/java/*"
+user="./src/UserService/src/main/java/*"
+product="./src/ProductService/src/main/java/*"
+
 
 # Check and fix the classpath syntax
-classpath="$jar_lib/*"
-
-javadoc -d docs -cp "$classpath" ./src/OrderService/src/main/java/*
+javadoc -d docs/OrderService -cp "$classpath" order
+javadoc -d docs/UserService -cp "$classpath" user
+javadoc -d docs/ProductService -cp "$classpath" product

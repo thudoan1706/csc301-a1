@@ -9,6 +9,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
+/**
+ * The {@code UserDatabaseManager} class manages user data stored in a JSON file.
+ * It provides functionality to interact with user information such as retrieval,
+ * backup, and other operations.
+ */
 public class UserDatabaseManager {
 
     private static final String JSON_FILE_PATH = "./data/user.json";
@@ -21,6 +26,9 @@ public class UserDatabaseManager {
 
     
     /** 
+     * Constructs a new {@code UserDatabaseManager} and initializes the list of existing users
+     * by loading data from the main JSON file.
+     *
      * @param id
      * @return Map<String, String>
      */
@@ -43,10 +51,12 @@ public class UserDatabaseManager {
 
     
     /** 
-     * @param requestBodyMap
-     * @param id
-     * @return int
-     * @throws IOException
+     * Updates an existing user with the specified ID using the provided request body parameters.
+     *
+     * @param requestBodyMap A map containing request body parameters for updating the user.
+     * @param id              The unique identifier of the user to be updated.
+     * @return The status code indicating the success or failure of the update operation.
+     * @throws IOException If an error occurs while updating the user in the database.
      */
     public int updateExistingUser(Map<String, String> requestBodyMap, int id) throws IOException {
         try {
@@ -79,7 +89,17 @@ public class UserDatabaseManager {
             return 500;
         }
     }
-    
+
+
+    /**
+     * Deletes an existing user with the specified ID using the provided request body parameters.
+     *
+     * @param requestBodyMap A map containing request body parameters for additional information
+     *                       or validation during the delete operation (may be null if not needed).
+     * @param id              The unique identifier of the user to be deleted.
+     * @return The status code indicating the success or failure of the delete operation.
+     * @throws IOException If an error occurs while deleting the user from the database.
+     */
     public int deleteExistingUser(Map<String, String> requestBodyMap, int id) throws IOException {
         try {
             System.out.println("Hello!");
@@ -106,6 +126,14 @@ public class UserDatabaseManager {
         }
     }
     
+    /**
+     * Creates a new user with the specified ID using the provided request body parameters.
+     *
+     * @param requestBodyMap A map containing request body parameters for initializing the new user.
+     * @param id              The unique identifier for the new user.
+     * @return The status code indicating the success or failure of the create operation.
+     * @throws IOException If an error occurs while creating the new user in the database.
+     */
     public int createNewUser(Map<String, String> requestBodyMap, int id) throws IOException {
         try {
             if (!isUserPresent(id)) {
@@ -146,7 +174,14 @@ public class UserDatabaseManager {
         }
     }
 
+
     // Function to check if a user with a specific ID is present
+    /**
+     * Checks if a user with the specified ID is present in the user database.
+     *
+     * @param id The unique identifier of the user to check for presence.
+     * @return {@code true} if the user is present, {@code false} otherwise.
+     */
     public boolean isUserPresent(int id) {
         for (User existingUser : existingUsers) {
             if (existingUser.getId() == id) {
@@ -156,6 +191,11 @@ public class UserDatabaseManager {
         return false; // User is not present in the list
     }
 
+    /**
+     * Retrieves a list of all users from the user database.
+     *
+     * @return A list of User objects representing all users in the database.
+     */
     public List<User> getAllUsers() {
         try {
             // Read the existing list of users from the JSON file
@@ -173,6 +213,12 @@ public class UserDatabaseManager {
         }
     }
 
+    /**
+     * Persists the current state of user data for backup purposes.
+     *
+     * @return {@code true} if the backup operation is successful, {@code false} otherwise.
+     * @throws IOException If an error occurs while persisting data for backup.
+     */
     public boolean persistDataForBackUp() throws IOException {
         try {
             // Write the updated list to the JSON file
@@ -190,6 +236,10 @@ public class UserDatabaseManager {
         }
     }
 
+    /**
+     * Removes the original stored data file from the system.
+     * This operation is typically performed after a successful backup to avoid redundancy.
+     */
     public void removeOriginalStoredDataFile() {
         // Write the updated list to the JSON file
         File file = new File(JSON_FILE_PATH);
@@ -202,6 +252,11 @@ public class UserDatabaseManager {
         }
     }
 
+
+    /**
+     * Removes the backup stored data file from the system.
+     * This operation is typically performed after ensuring the integrity of the backup.
+     */
     public void removeOBackUpStoredDataFile() {
         // Write the updated list to the JSON file
         File file = new File(BACKUP_FILE_PATH);
@@ -214,6 +269,11 @@ public class UserDatabaseManager {
         }
     }
 
+    /**
+     * Restores the backed-up data to the original stored data file.
+     *
+     * @throws IOException If an error occurs during the data restoration process.
+     */
     public void restoreDataToOriginalFile() throws IOException {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
