@@ -19,20 +19,33 @@ import exceptions.NegativeQuantityException;
 import exceptions.ProductNotFoundException;
 import exceptions.ProductSerializationException;
 
+/**
+ * The {@code ProductDatabase} class manages the storage and manipulation of product data.
+ * It includes methods for creating, retrieving, updating, and deleting products,
+ * as well as persisting data, creating backups, and restoring data.
+ * 
+ * @author Juan Gutierrez
+ */
 public class ProductDatabase {
 
     private static final String JSON_FILE_PATH = "./data/product.json";
     private static final String BACKUP_FILE_PATH = "./data/backup.json";
     private static List<Product> products;
 
+    /**
+     * Default constructor for the {@code ProductDatabase} class.
+     * Initializes the list of products by retrieving data from the JSON file.
+     */
     public ProductDatabase() {
         products = retrieveDatabase();
     }
 
-    
-    /** 
-     * @param requestURI
-     * @return String
+    /**
+     * Retrieves the details of a product based on the provided request URI.
+     *
+     * @param requestURI The request URI containing the product ID.
+     * @return A JSON string representing the product details.
+     * @throws ProductNotFoundException If the product with the specified ID is not found.
      */
     public String getProduct(String requestURI) {
         int lastIndex = requestURI.lastIndexOf("/");
@@ -53,9 +66,15 @@ public class ProductDatabase {
     }
 
     
-    /** 
-     * @param requestBodyMap
-     * @return Product
+    /**
+     * Creates a new product based on the provided request body map.
+     *
+     * @param requestBodyMap The map containing product details.
+     * @return The created product.
+     * @throws MissingRequiredFieldsException If one or more required fields are missing.
+     * @throws NegativePriceException         If the product price is negative.
+     * @throws NegativeQuantityException      If the product quantity is negative.
+     * @throws DuplicateIdException           If a product with the provided ID already exists.
      */
     public Product createProduct(Map<String, String> requestBodyMap) {
         if (!requestBodyMap.containsKey("id") ||
@@ -89,6 +108,12 @@ public class ProductDatabase {
         }
     }
 
+    /**
+     * Deletes a product based on the provided request body map.
+     *
+     * @param requestBodyMap The map containing product details.
+     * @throws ProductNotFoundException If no matching product is found to delete.
+     */
     public void deleteProduct(Map<String, String> requestBodyMap) {
         int id = Integer.parseInt(requestBodyMap.get("id"));
         String name = requestBodyMap.get("name");
@@ -109,6 +134,13 @@ public class ProductDatabase {
         }
     }
 
+    /**
+     * Updates a product based on the provided request body map.
+     *
+     * @param requestBodyMap The map containing product details.
+     * @return The updated product.
+     * @throws ProductNotFoundException If the product with the specified ID is not found.
+     */
     public Product updateProduct(Map<String, String> requestBodyMap) {
         int id = Integer.parseInt(requestBodyMap.get("id"));
 
@@ -174,6 +206,12 @@ public class ProductDatabase {
         return false;
     }
 
+    /**
+     * Persists the current list of products to the original JSON file.
+     *
+     * @return {@code true} if the operation is successful, {@code false} otherwise.
+     * @throws IOException If an I/O error occurs during the operation.
+     */
     public boolean persistDataForBackUp() throws IOException {
         try {
             // Write the updated list to the JSON file
@@ -192,6 +230,9 @@ public class ProductDatabase {
         }
     }
 
+    /**
+     * Removes the original stored data file.
+     */
     public void removeOriginalStoredDataFile() {
         // Write the updated list to the JSON file
         File file = new File(JSON_FILE_PATH);
@@ -204,6 +245,9 @@ public class ProductDatabase {
         }
     }
 
+    /**
+     * Removes the backup stored data file.
+     */
     public void removeOBackUpStoredDataFile() {
         // Write the updated list to the JSON file
         File file = new File(BACKUP_FILE_PATH);
@@ -216,6 +260,11 @@ public class ProductDatabase {
         }
     }
 
+    /**
+     * Restores data from the backup file to the original file.
+     *
+     * @throws IOException If an I/O error occurs during the operation.
+     */
     public void restoreDataToOriginalFile() throws IOException {
         try {
             ObjectMapper objectMapper = new ObjectMapper();

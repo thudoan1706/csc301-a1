@@ -22,12 +22,18 @@ import java.util.concurrent.Executors;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * The {@code OrderService} class represents the main entry point for the Order microservice.
+ * It initializes an HTTP server based on the provided configuration and handles incoming order requests.
+ */
 public class OrderService {
     final static int threadPoolSize = 20;
     
-    /** 
-     * @param args
-     * @throws IOException
+    /**
+     * Main method to start the OrderService.
+     *
+     * @param args command-line arguments (expects the path to the configuration file)
+     * @throws IOException if an I/O error occurs
      */
     public static void main(String[] args) throws IOException {
         try {
@@ -66,17 +72,34 @@ public class OrderService {
         }
     }
 
+    /**
+     * The OrderRequestHandler class handles incoming HTTP requests for the "/order" endpoint.
+     * It processes POST requests to place orders and contains logic for order placement, shutdown, and restart commands.
+     */
     static class OrderRequestHandler implements HttpHandler {
         HttpServer server;
         ExecutorService threadPool;
         Map<String, Map<String, String>> serviceEndpoints;
 
+        /**
+         * Constructs a new OrderRequestHandler with the specified HTTP server, thread pool, and service endpoints.
+         *
+         * @param server           the HTTP server
+         * @param threadPool       the thread pool
+         * @param serviceEndpoints the service endpoints configuration
+         */
         public OrderRequestHandler(HttpServer server, ExecutorService threadPool, Map<String, Map<String, String>> serviceEndpoints) {
             this.server = server;
             this.threadPool = threadPool;
             this.serviceEndpoints = serviceEndpoints;
         }
 
+        /**
+         * Handles incoming HTTP requests for the "/order" endpoint.
+         *
+         * @param exchange the HttpExchange object representing the HTTP request and response
+         * @throws IOException if an I/O error occurs
+         */
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             if ("POST".equals(exchange.getRequestMethod())) {

@@ -25,14 +25,20 @@ import exceptions.NegativePriceException;
 import exceptions.NegativeQuantityException;
 import exceptions.ProductNotFoundException;
 
+/**
+ * The {@code ProductService} class represents the main entry point for the product service application.
+ * It initializes and starts an HTTP server to handle product-related requests.
+ */
 public class ProductService {
 
     final static int threadPoolSize = 20;
 
     
-    /** 
-     * @param args
-     * @throws IOException
+    /**
+     * The main method that starts the ProductService application.
+     *
+     * @param args Command line arguments. The first argument, if provided, is treated as the config file path.
+     * @throws IOException If an I/O error occurs during the server setup or startup.
      */
     public static void main(String[] args) throws IOException {
         try {
@@ -89,17 +95,33 @@ public class ProductService {
         }
     }
 
+    /**
+     * The {@code ProductRequestHandler} class is responsible for handling HTTP requests related to products.
+     * It implements the {@code HttpHandler} interface to process incoming requests.
+     */
     static class ProductRequestHandler implements HttpHandler {
         ProductDatabase productDatabase;
         HttpServer server;
         ExecutorService threadPool;
 
+        /**
+         * Constructs a new instance of {@code ProductRequestHandler}.
+         *
+         * @param server     The HTTP server instance.
+         * @param threadPool The executor service for handling HTTP requests in a multi-threaded environment.
+         */
         public ProductRequestHandler(HttpServer server, ExecutorService threadPool) {
             this.productDatabase = new ProductDatabase();
             this.server = server;
             this.threadPool = threadPool;
         }
 
+        /**
+         * Handles an incoming HTTP request by determining the command and executing the corresponding operation.
+         *
+         * @param exchange The HTTP exchange object representing the request and response.
+         * @throws IOException If an I/O error occurs during request handling.
+         */
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             try {
