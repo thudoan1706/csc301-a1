@@ -31,7 +31,7 @@ public class ProductDatabase {
 
     
     /** 
-     * @param requestURI
+     * @param requestURI URI endpoint
      * @return String
      */
     public String getProduct(String requestURI) {
@@ -54,7 +54,7 @@ public class ProductDatabase {
 
     
     /** 
-     * @param requestBodyMap
+     * @param requestBodyMap Payload for product request
      * @return Product
      */
     public Product createProduct(Map<String, String> requestBodyMap) {

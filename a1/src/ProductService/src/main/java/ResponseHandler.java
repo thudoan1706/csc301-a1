@@ -7,10 +7,10 @@ import java.nio.charset.StandardCharsets;
 public class ResponseHandler {
     
     /** 
-     * @param exchange
-     * @param response
-     * @param statusCode
-     * @throws IOException
+     * @param exchange : HTTP exchange
+     * @param response : response of the request
+     * @param statusCode : HTTP status code
+     * @throws IOException : IO exception
      */
     public static void sendResponse(HttpExchange exchange, String response, int statusCode) throws IOException {
         exchange.sendResponseHeaders(statusCode, response.length());

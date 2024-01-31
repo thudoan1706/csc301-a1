@@ -26,8 +26,8 @@ public class OrderService {
     final static int threadPoolSize = 20;
     
     /** 
-     * @param args
-     * @throws IOException
+     * @param args Input from systems
+     * @throws IOException Input and Output Exception
      */
     public static void main(String[] args) throws IOException {
         try {

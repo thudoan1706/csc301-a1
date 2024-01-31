@@ -29,8 +29,8 @@ public class UserDatabaseManager {
      * Constructs a new {@code UserDatabaseManager} and initializes the list of existing users
      * by loading data from the main JSON file.
      *
-     * @param id
-     * @return Map<String, String>
+     * @param id User's identifier
+     * @return  Map<String, String>
      */
     public Map<String, String> getUser(Integer id) {
         Map<String, String> responseBodyMap = new HashMap<>();

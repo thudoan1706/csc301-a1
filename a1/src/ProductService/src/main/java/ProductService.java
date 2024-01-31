@@ -31,8 +31,8 @@ public class ProductService {
 
     
     /** 
-     * @param args
-     * @throws IOException
+     * @param args Input received from the system
+     * @throws IOException Input out exception
      */
     public static void main(String[] args) throws IOException {
         try {
